@@ -62,9 +62,9 @@ function carregar() {
 
     if (m.remover) return; // quem vai sair nao precisa de nome nem senha
     if (!m.nome?.trim()) erroFatal(`${onde}: falta "nome".`);
-    if (!m.senha || m.senha.length < 8) {
-      erroFatal(`${onde}: a senha precisa ter pelo menos 8 caracteres.`);
-    }
+
+    const problema = senhaFraca(m.senha, m.email, m.nome);
+    if (problema) erroFatal(`${onde} (${m.email}): ${problema}`);
   });
 
   return { url, chave, membros };
@@ -73,6 +73,43 @@ function carregar() {
 function erroFatal(mensagem) {
   console.error(`\n  ${mensagem}\n`);
   process.exit(1);
+}
+
+/**
+ * Devolve o motivo de a senha ser fraca, ou null se estiver boa.
+ *
+ * O criterio que mais importa e o comprimento: 12 caracteres aleatorios
+ * resistem a forca bruta melhor do que 8 com simbolo e maiuscula. Os outros
+ * testes pegam os padroes que as pessoas realmente usam — o proprio nome, o
+ * e-mail, "senha123" — que qualquer lista de ataque tenta primeiro.
+ */
+function senhaFraca(senha, email, nome) {
+  if (!senha || typeof senha !== 'string') return 'falta "senha".';
+  if (senha.length < 12) return 'a senha precisa ter pelo menos 12 caracteres.';
+
+  const baixa = senha.toLowerCase();
+
+  if (/^(TROQUE|COLOQUE|COLE|trocarEsta)/i.test(senha)) {
+    return 'a senha ainda esta com o valor de exemplo.';
+  }
+
+  const usuario = (email ?? '').split('@')[0].toLowerCase();
+  if (usuario.length >= 4 && baixa.includes(usuario)) {
+    return 'a senha contem o proprio e-mail.';
+  }
+
+  const primeiroNome = (nome ?? '').trim().split(/\s+/)[0].toLowerCase();
+  if (primeiroNome.length >= 4 && baixa.includes(primeiroNome)) {
+    return 'a senha contem o proprio nome.';
+  }
+
+  const obvias = ['senha', 'password', '123456', 'qwerty', 'admin', 'banco', 'familia'];
+  const achada = obvias.find((p) => baixa.includes(p));
+  if (achada) return `a senha contem "${achada}", que esta em qualquer lista de ataque.`;
+
+  if (/^(.)\1+$/.test(senha)) return 'a senha e um caractere repetido.';
+
+  return null;
 }
 
 // ------------------------------------------------------------

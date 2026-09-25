@@ -15,6 +15,8 @@ import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
 const PLUGGY_API = 'https://api.pluggy.ai';
 const DIAS_PADRAO = 90;
+/** Intervalo minimo entre duas sincronizacoes. */
+const JANELA_MINIMA_MS = 60_000;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -238,6 +240,25 @@ function semAcento(texto: string): string {
   return texto.normalize('NFD').replace(COMBINANTES, '').toLowerCase();
 }
 
+/**
+ * Compara dois segredos em tempo constante.
+ *
+ * O `===` de strings sai no primeiro byte diferente, e esse tempo de resposta
+ * vaza o quanto do segredo o atacante ja acertou — da para reconstrui-lo byte
+ * a byte. Aqui todos os bytes sao sempre percorridos. O tamanho vaza, e tudo
+ * bem: saber o comprimento nao ajuda a adivinhar o conteudo.
+ */
+function comparacaoSegura(recebido: string, esperado: string): boolean {
+  const codificador = new TextEncoder();
+  const a = codificador.encode(recebido);
+  const b = codificador.encode(esperado);
+  if (a.length !== b.length) return false;
+
+  let diferenca = 0;
+  for (let i = 0; i < a.length; i += 1) diferenca |= a[i] ^ b[i];
+  return diferenca === 0;
+}
+
 /** Quebra um array em pedacos, para nao mandar payloads gigantes de uma vez. */
 function emLotes<T>(itens: T[], tamanho: number): T[][] {
   const lotes: T[][] = [];
@@ -453,7 +474,11 @@ Deno.serve(async (req) => {
 
   // --- quem esta chamando? ---
   const segredoCron = Deno.env.get('CRON_SECRET');
-  const veioDoCron = Boolean(segredoCron) && req.headers.get('x-cron-secret') === segredoCron;
+  // Segredo curto demais nao vale como autenticacao: melhor recusar o
+  // caminho do cron do que aceitar algo adivinhavel.
+  const cronUtilizavel = typeof segredoCron === 'string' && segredoCron.length >= 24;
+  const veioDoCron =
+    cronUtilizavel && comparacaoSegura(req.headers.get('x-cron-secret') ?? '', segredoCron);
 
   if (!veioDoCron) {
     const autorizacao = req.headers.get('Authorization') ?? '';
@@ -477,6 +502,23 @@ Deno.serve(async (req) => {
 
   // --- roda ---
   const db = createClient(urlSupabase, chaveServico, { auth: { persistSession: false } });
+
+  // Uma sincronizacao a cada 60s basta de sobra: os dados do lado da Pluggy
+  // so mudam de hora em hora. O limite existe para que ninguem consiga
+  // martelar o endpoint e queimar a cota da conta.
+  const { data: recente } = await db
+    .from('sincronizacoes')
+    .select('iniciada_em')
+    .gte('iniciada_em', new Date(Date.now() - JANELA_MINIMA_MS).toISOString())
+    .limit(1)
+    .maybeSingle();
+
+  if (recente) {
+    return json(
+      { ok: false, erro: 'Uma sincronizacao acabou de rodar. Espere um minuto e tente de novo.' },
+      429,
+    );
+  }
 
   let dias = DIAS_PADRAO;
   try {
