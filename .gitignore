@@ -1,0 +1,15 @@
+# Segredos — nunca commitar
+.env
+.env.local
+*.key
+*.pem
+
+# Supabase CLI
+supabase/.env.secrets
+supabase/.temp/
+supabase/.branches/
+
+# Sistema
+.DS_Store
+Thumbs.db
+node_modules/
