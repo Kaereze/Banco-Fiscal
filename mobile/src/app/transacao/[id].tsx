@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { Aviso, Botao, Campo, Cartao, Pilula, Rotulo, Vazio } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { useDados } from '@/lib/dados';
 import { dataLonga, moeda } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
@@ -112,7 +113,7 @@ function Editor({ transacao }: { transacao: Transacao }) {
       style={estilos.tela}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[estilos.conteudo, conteudoCentralizado]} keyboardShouldPersistTaps="handled">
         {/* ---------- Cabeçalho ---------- */}
         <Cartao style={{ gap: espaco.xs }}>
           <Text style={estilos.descricao}>{transacao.descricao}</Text>

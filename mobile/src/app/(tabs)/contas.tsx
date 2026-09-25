@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Botao, Cartao, Titulo, Vazio } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { useDados } from '@/lib/dados';
 import { moeda, tempoDesde } from '@/lib/format';
 import { cores, espaco, fonte, raio } from '@/lib/theme';
@@ -24,7 +25,7 @@ export default function Contas() {
 
   return (
     <ScrollView
-      contentContainerStyle={estilos.conteudo}
+      contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
       refreshControl={
         <RefreshControl refreshing={atualizando} onRefresh={puxarParaAtualizar} tintColor={cores.primaria} />
       }

@@ -7,6 +7,7 @@ import { BarraCategoria } from '@/components/BarraCategoria';
 import { ItemTransacao } from '@/components/ItemTransacao';
 import { SeletorMes } from '@/components/SeletorMes';
 import { Aviso, Botao, Cartao, Titulo, Vazio } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { resumirMes, useDados } from '@/lib/dados';
 import { moeda, tempoDesde } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
@@ -55,7 +56,7 @@ export default function Resumo() {
 
   return (
     <ScrollView
-      contentContainerStyle={estilos.conteudo}
+      contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
       refreshControl={
         <RefreshControl refreshing={atualizando} onRefresh={puxarParaAtualizar} tintColor={cores.primaria} />
       }

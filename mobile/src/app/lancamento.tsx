@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { Aviso, Botao, Campo, Pilula, Rotulo } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { useDados } from '@/lib/dados';
 import { numeroDoTexto, paraISO } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
@@ -72,7 +73,7 @@ export default function Lancamento() {
       style={estilos.tela}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[estilos.conteudo, conteudoCentralizado]} keyboardShouldPersistTaps="handled">
         <Text style={estilos.explicacao}>
           Para o que o banco não enxerga: dinheiro vivo, um troco, uma vaquinha. O que passa no
           cartão ou no Pix chega sozinho pela sincronização.

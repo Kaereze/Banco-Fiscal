@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-nati
 
 import { SeletorMes } from '@/components/SeletorMes';
 import { Botao, Cartao, Titulo } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { resumirMes, useDados } from '@/lib/dados';
 import { mesPorExtenso, moeda, numeroDoTexto } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
@@ -30,7 +31,7 @@ export default function Ajustes() {
   }
 
   return (
-    <ScrollView contentContainerStyle={estilos.conteudo}>
+    <ScrollView contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}>
       {/* ---------- Quem está usando ---------- */}
       <Cartao style={estilos.perfil}>
         <View style={[estilos.avatar, { backgroundColor: perfil?.cor ?? cores.primaria }]}>

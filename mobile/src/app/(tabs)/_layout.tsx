@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
+import { LARGURA_MAXIMA } from '@/components/Pagina';
 import { cores, fonte } from '@/lib/theme';
 
 export default function LayoutAbas() {
@@ -12,12 +13,18 @@ export default function LayoutAbas() {
         headerTitleStyle: { fontSize: fonte.titulo, fontWeight: '800', color: cores.texto },
         tabBarActiveTintColor: cores.primaria,
         tabBarInactiveTintColor: cores.textoFraco,
+        // Numa tela larga, 4 abas espalhadas por 1920px ficam longe demais
+        // umas das outras. O limite acompanha o do conteudo; no celular a
+        // tela e mais estreita que ele e nada muda.
         tabBarStyle: {
           backgroundColor: cores.superficie,
           borderTopColor: cores.borda,
           height: 62,
           paddingBottom: 8,
           paddingTop: 6,
+          width: '100%',
+          maxWidth: LARGURA_MAXIMA,
+          alignSelf: 'center',
         },
         tabBarLabelStyle: { fontSize: fonte.mini, fontWeight: '600' },
         sceneStyle: { backgroundColor: cores.fundo },

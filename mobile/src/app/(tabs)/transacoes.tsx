@@ -4,6 +4,7 @@ import { ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'reac
 import { ItemTransacao } from '@/components/ItemTransacao';
 import { SeletorMes } from '@/components/SeletorMes';
 import { Pilula, Vazio } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { useDados } from '@/lib/dados';
 import { diaRelativo, moeda } from '@/lib/format';
 import { cores, espaco, fonte, raio } from '@/lib/theme';
@@ -68,7 +69,7 @@ export default function Transacoes() {
       sections={secoes}
       keyExtractor={(item) => item.id}
       stickySectionHeadersEnabled={false}
-      contentContainerStyle={estilos.conteudo}
+      contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
       refreshing={atualizando}
       onRefresh={puxarParaAtualizar}
       keyboardShouldPersistTaps="handled"

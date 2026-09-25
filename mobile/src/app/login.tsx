@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Aviso, Botao, Campo } from '@/components/ui';
+import { conteudoCentralizado } from '@/components/Pagina';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte } from '@/lib/theme';
 
@@ -45,7 +46,7 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={estilos.conteudo}
+          contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
           keyboardShouldPersistTaps="handled"
         >
           <View style={estilos.marca}>
