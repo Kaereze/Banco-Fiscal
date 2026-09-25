@@ -216,6 +216,41 @@ gerar um APK novo quando você adiciona uma biblioteca com código nativo.
 
 ---
 
+## Bibliotecas e serviços
+
+### Aplicativo
+
+| Biblioteca | Versão | Para quê |
+|---|---|---|
+| [expo](https://docs.expo.dev) | ~57.0.25 | Plataforma e build (EAS) |
+| [react-native](https://reactnative.dev) | 0.86.3 | Base do app nativo |
+| [react](https://react.dev) | 19.2.3 | Biblioteca de UI |
+| [expo-router](https://docs.expo.dev/router/introduction/) | ~57.0.23 | Navegação por arquivos |
+| [@supabase/supabase-js](https://supabase.com/docs/reference/javascript) | ^2.117.2 | Login e acesso ao banco |
+| [@react-native-async-storage/async-storage](https://react-native-async-storage.github.io/async-storage/) | 2.2.0 | Guarda a sessão no aparelho |
+| [react-native-url-polyfill](https://github.com/charpeni/react-native-url-polyfill) | ^4.0.0 | `URL` que o supabase-js exige |
+| [@expo/vector-icons](https://icons.expo.fyi) | ^15.0.2 | Ícones das abas |
+| [react-native-safe-area-context](https://github.com/th3rdwave/react-native-safe-area-context) | ~5.7.0 | Respeita notch e barras |
+| [react-native-screens](https://github.com/software-mansion/react-native-screens) | ~4.26.0 | Telas nativas na navegação |
+| [react-native-reanimated](https://docs.swmansion.com/react-native-reanimated/) | 4.5.1 | Animações das transições |
+| [react-native-gesture-handler](https://docs.swmansion.com/react-native-gesture-handler/) | ~2.32.0 | Gestos da navegação |
+| [expo-font](https://docs.expo.dev/versions/latest/sdk/font/) | ~57.0.4 | Fontes dos ícones |
+| TypeScript | ~6.0.3 | Tipagem |
+
+Os gráficos de barras são `View` com largura proporcional — nenhuma biblioteca
+de charts. Para barras simples, uma dependência a mais não se pagaria.
+
+### Servidor
+
+| | Para quê |
+|---|---|
+| [Supabase](https://supabase.com) | Postgres, autenticação, RLS e Edge Functions |
+| [Deno](https://deno.com) | Runtime da Edge Function |
+| [Pluggy](https://pluggy.ai) | Open Finance — traz os extratos dos bancos |
+
+Nenhuma dependência externa no sincronizador além do próprio cliente Supabase:
+a conversa com a Pluggy é `fetch` puro.
+
 ## Como o app está organizado
 
 ```text
