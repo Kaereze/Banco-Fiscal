@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
-import { LARGURA_MAXIMA } from '@/components/Pagina';
+import { LARGURA_MAXIMA, NO_PC } from '@/components/Pagina';
 import { cores, fonte } from '@/lib/theme';
 
 export default function LayoutAbas() {
@@ -11,6 +11,10 @@ export default function LayoutAbas() {
         headerStyle: { backgroundColor: cores.fundo },
         headerShadowVisible: false,
         headerTitleStyle: { fontSize: fonte.titulo, fontWeight: '800', color: cores.texto },
+        // No PC o cabeçalho ocupa a tela inteira enquanto o conteúdo fica
+        // centralizado; com o título à esquerda os dois se desalinham. No
+        // celular a largura é a mesma e o alinhamento à esquerda continua.
+        headerTitleAlign: NO_PC ? 'center' : 'left',
         tabBarActiveTintColor: cores.primaria,
         tabBarInactiveTintColor: cores.textoFraco,
         // Numa tela larga, 4 abas espalhadas por 1920px ficam longe demais

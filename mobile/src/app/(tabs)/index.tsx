@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -14,6 +14,7 @@ import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, raio, sombra } from '@/lib/theme';
 
 export default function Resumo() {
+  const router = useRouter();
   const { perfil, perfilResolvido } = useSessao();
   const {
     carregando,
@@ -115,16 +116,14 @@ export default function Resumo() {
       </Cartao>
 
       {semCategoria > 0 ? (
-        <Link href="/transacoes" asChild>
-          <Pressable>
-            <Aviso
-              tipo="alerta"
-              texto={`${semCategoria} ${
-                semCategoria === 1 ? 'gasto ainda está' : 'gastos ainda estão'
-              } sem categoria. Toque para organizar.`}
-            />
-          </Pressable>
-        </Link>
+        <Pressable onPress={() => router.push('/transacoes')}>
+          <Aviso
+            tipo="alerta"
+            texto={`${semCategoria} ${
+              semCategoria === 1 ? 'gasto ainda está' : 'gastos ainda estão'
+            } sem categoria. Toque para organizar.`}
+          />
+        </Pressable>
       ) : null}
 
       {/* ---------- Onde foi o dinheiro ---------- */}
@@ -175,12 +174,13 @@ export default function Resumo() {
         </View>
       ) : null}
 
-      <Link href="/lancamento" asChild>
-        <Pressable style={({ pressed }) => [estilos.lancar, pressed && { opacity: 0.85 }]}>
-          <Ionicons name="add-circle" size={22} color="#ffffff" />
-          <Text style={estilos.lancarTexto}>Lançar gasto em dinheiro</Text>
-        </Pressable>
-      </Link>
+      <Pressable
+        onPress={() => router.push('/lancamento')}
+        style={({ pressed }) => [estilos.lancar, pressed && { opacity: 0.85 }]}
+      >
+        <Ionicons name="add-circle" size={22} color="#ffffff" />
+        <Text style={estilos.lancarTexto}>Lançar gasto em dinheiro</Text>
+      </Pressable>
     </ScrollView>
   );
 }

@@ -1,4 +1,12 @@
-import { useWindowDimensions, View, type ViewProps } from 'react-native';
+import { Platform, useWindowDimensions, View, type ViewProps } from 'react-native';
+
+/**
+ * No navegador não existe safe area nem inset automático da barra de abas:
+ * o conteúdo rola por baixo dela e as últimas linhas ficam encobertas. No
+ * celular o react-navigation já reserva esse espaço, então lá some.
+ */
+export const NO_PC = Platform.OS === 'web';
+export const ESPACO_ABAS = NO_PC ? 86 : 0;
 
 /**
  * Largura acima da qual o conteudo para de crescer.
@@ -39,4 +47,5 @@ export const conteudoCentralizado = {
   width: '100%',
   maxWidth: LARGURA_MAXIMA,
   alignSelf: 'center',
+  paddingBottom: ESPACO_ABAS,
 } as const;
