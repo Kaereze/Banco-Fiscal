@@ -57,8 +57,11 @@ function verificarGit() {
   }
 
   // Segredos que possam ter entrado no historico, mesmo que ja removidos.
+  // O prefixo e montado em duas partes de proposito: escrito inteiro, ele
+  // apareceria neste arquivo e o proprio check acusaria a si mesmo.
+  const prefixoJwt = 'eyJhbGciOiJIUzI1' + 'NiIsInR5cCI6IkpXVCJ9';
   const vestigios = git(
-    'grep -lIE "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" HEAD -- . ":(exclude)mobile/package-lock.json"',
+    `grep -lIE "${prefixoJwt}" HEAD -- . ":(exclude)mobile/package-lock.json"`,
   ).trim();
   if (vestigios) {
     registrar(FALHA, 'git', `possivel JWT real commitado em: ${vestigios.replace(/\n/g, ', ')}`,
