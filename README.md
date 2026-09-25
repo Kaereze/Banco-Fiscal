@@ -1,220 +1,68 @@
 # Banco Fiscal
 
-Controle de gastos da família. Puxa os extratos do Caixa e do PagSeguro pela
-Pluggy, organiza por categoria e mostra num aplicativo Android que o pai e a
-mãe instalam uma vez e usam sem mexer em mais nada.
+Controle de gastos familiar que lê os extratos bancários por Open Finance,
+organiza por categoria e mostra num aplicativo Android que se instala uma vez
+e funciona sem ninguém precisar mexer em nada.
+
+Feito para uma família de verdade: o pai e a mãe abrem o app e enxergam para
+onde o dinheiro está indo no mês, sem planilha, sem digitar nada.
+
+```mermaid
+flowchart LR
+    B["🏦 Bancos"] -->|Open Finance| P["Meu Pluggy"]
+    P -->|REST| F["Edge Function<br/><i>guarda os segredos</i>"]
+    F -->|upsert| D[("Postgres<br/><i>histórico</i>")]
+    D <-->|RLS| A["📱 App"]
+```
+
+## O que ele faz
+
+| Tela | |
+|---|---|
+| **Resumo** | Quanto saiu no mês, quanto entrou, quanto sobrou, barras por categoria e os maiores gastos |
+| **Gastos** | Extrato agrupado por dia, com busca e filtros por categoria |
+| **Contas** | Saldos das contas e faturas dos cartões |
+| **Ajustes** | Orçamento mensal por categoria |
+
+Mais a edição de cada lançamento — categoria, quem gastou, observação — e o
+registro de gastos em dinheiro, que banco nenhum enxerga.
+
+### Três coisas que ele resolve bem
+
+**Suas edições sobrevivem à sincronização.** Categorizar um gasto não é
+trabalho perdido: o sincronizador regrava só o que vem do banco e não encosta
+no que a família organizou.
+
+**Transferência não é gasto.** Mandar dinheiro entre contas próprias inflaria
+gasto e receita ao mesmo tempo. Marque "não contar nos totais" e a transação
+sai das somas sem sair do histórico.
+
+**A categorização aprende.** Ao classificar um gasto, a opção *"sempre
+categorizar assim"* cria uma regra, e as próximas sincronizações já chegam
+prontas.
+
+## Como está construído
 
 ```text
-Meu Pluggy  ──►  Edge Function  ──►  Postgres  ──►  App Android
-(seus bancos)    (guarda as         (histórico,     (Expo / React
-                  credenciais)       categorias)     Native)
+mobile/                   aplicativo Expo (React Native)
+  src/app/                telas — cada arquivo é uma rota
+  src/components/         peças de interface
+  src/lib/                estado, formatação, tema, cliente Supabase
+
+supabase/
+  migrations/             schema, RLS e categorias iniciais
+  functions/sync-pluggy/  a única peça que conhece a Pluggy
+  opcional/               agendamento da sincronização
+
+scripts/                  cadastro de membros da família
+docs/                     documentação
 ```
 
-A regra que orienta todo o desenho: **as credenciais da Pluggy nunca entram no
-aplicativo.** Um APK é um arquivo ZIP — qualquer pessoa extrai strings de
-dentro dele. Se o `clientSecret` estivesse ali, quem pegasse o telefone teria
-acesso total ao extrato bancário. Por isso existe a Edge Function no meio: ela
-guarda os segredos, fala com a Pluggy e grava o resultado já mastigado no
-banco. O app só lê tabelas.
-
----
-
-## O que você vai precisar
-
-| | Conta | Custo |
-|---|---|---|
-| 1 | [Meu Pluggy](https://meu.pluggy.ai) com os bancos conectados | grátis |
-| 2 | [Dashboard Pluggy](https://dashboard.pluggy.ai) (mesma conta, pega as credenciais) | grátis |
-| 3 | [Supabase](https://supabase.com) | plano grátis basta |
-| 4 | [Expo](https://expo.dev) (para gerar o APK) | grátis |
-
----
-
-## Passo 1 — Banco de dados
-
-Crie um projeto no Supabase. Depois, no **SQL Editor**, cole e rode o conteúdo
-de [`supabase/migrations/0001_schema.sql`](supabase/migrations/0001_schema.sql).
-
-Isso cria as tabelas, liga o Row Level Security e já deixa 13 categorias
-prontas (Mercado, Moradia, Transporte, Saúde...).
-
-> **Sobre o RLS:** quem não tiver uma linha na tabela `profiles` enxerga o
-> banco vazio, mesmo tendo login válido. É o que impede que alguém que
-> descubra a chave pública do app veja os seus gastos.
-
----
-
-## Passo 2 — Credenciais da Pluggy
-
-1. Conecte Caixa e PagSeguro em [meu.pluggy.ai](https://meu.pluggy.ai).
-2. Entre no [dashboard.pluggy.ai](https://dashboard.pluggy.ai) com a **mesma
-   conta** e abra **Aplicações**.
-3. Nas configurações de conectores da aplicação, **habilite o conector
-   "MeuPluggy"** — ele não vem ligado por padrão.
-4. Volte ao Meu Pluggy e **vincule cada conta conectada à aplicação**.
-5. De volta em **Aplicações**, copie o `Client ID` e o `Client Secret`.
-
-> **O passo 4 é o que mais derruba gente.** Sem o vínculo, a API responde
-> `200 OK` com lista vazia — não dá erro, simplesmente não vem nada. Deu certo
-> quando a conexão aparece dentro da aplicação e sai do estado de espera.
->
-> **Ignore o aviso de "trial expirado".** Aquela faixa vermelha e a checklist
-> "Solicitar Acesso à Produção" (webhooks, due diligence, dados reais) são a
-> trilha comercial, para quem atende clientes terceiros. Uso pessoal via Meu
-> Pluggy é grátis por tempo indeterminado.
-
-### Limite do plano grátis
-
-Até **5 conexões ativas, todas do mesmo titular (mesmo CPF)**.
-
-Isso cobre bem o uso atual — as contas são todas suas. Mas inviabiliza a
-expansão "cada um conecta o próprio banco": as contas do pai e da mãe são
-outro CPF. Quando isso for necessário, cada pessoa precisa do próprio Meu
-Pluggy com credenciais próprias, e o sincronizador tem que percorrer vários
-pares de credenciais — hoje ele lida com um só.
-
----
-
-## Passo 3 — Edge Function
-
-Conecte a CLI ao projeto (use `npx` — o pacote `supabase` não suporta
-instalação global via npm):
-
-```bat
-npx supabase@latest login
-npx supabase@latest link --project-ref SEU_PROJECT_REF
-```
-
-Guarde os segredos **por arquivo**, não por argumento na linha de comando:
-se o secret tiver espaço, vírgula, `&` ou `|`, o shell quebra o valor e a CLI
-responde `Invalid secret pair ... Must be NAME=VALUE`.
-
-```bat
-copy supabase\.env.secrets.example supabase\.env.secrets
-notepad supabase\.env.secrets
-npx supabase@latest secrets set --env-file supabase/.env.secrets
-npx supabase@latest secrets list
-```
-
-Publique a função:
-
-```bat
-npx supabase@latest functions deploy sync-pluggy --use-api --no-verify-jwt
-```
-
-- `--use-api` empacota no servidor da Supabase e **dispensa o Docker**.
-- `--no-verify-jwt` desliga a checagem de JWT **do gateway**, não a
-  autenticação: a própria função exige um usuário cadastrado em `profiles` ou
-  o header `x-cron-secret`, e devolve 401 sem isso. É o que permite o
-  agendamento chamá-la sem um token de usuário.
-
-Teste na hora. A CLI **não tem** `functions invoke` — chame por HTTP:
-
-```bat
-curl -X POST "https://SEU-PROJETO.supabase.co/functions/v1/sync-pluggy" -H "x-cron-secret: SEU_CRON_SECRET" -H "Content-Type: application/json" -d "{}"
-```
-
-Deve responder algo como
-`{"ok":true,"conexoes":2,"contas":3,"novas":412,"atualizadas":0}`.
-
-> Se vier `Nenhuma conexao encontrada` ou `"contas":0`, o vínculo com o Meu
-> Pluggy ficou incompleto. Pegue o Item ID no dashboard e acrescente
-> `PLUGGY_ITEM_IDS=...` ao `supabase/.env.secrets`, rodando o
-> `secrets set --env-file` de novo.
-
-### Sincronização automática (opcional)
-
-Por padrão, os dados chegam quando alguém aperta **"Buscar no banco agora"**.
-Para atualizar sozinho duas vezes por dia, edite
-[`supabase/opcional/sincronizacao_automatica.sql`](supabase/opcional/sincronizacao_automatica.sql)
-trocando `SEU-PROJETO` e `SEU_CRON_SECRET`, e rode no SQL Editor.
-
----
-
-## Passo 4 — Cadastrar a família
-
-Cada pessoa precisa de um login **e** de uma linha em `profiles`. O script faz
-os dois:
-
-No **cmd.exe** (prompt `C:\...>`):
-
-```bat
-set SUPABASE_URL=https://xxxx.supabase.co
-set SUPABASE_SERVICE_ROLE_KEY=eyJ...
-
-node scripts/criar-membro.mjs "voce@email.com" "umaSenhaBoa123" "João"
-node scripts/criar-membro.mjs "pai@email.com" "outraSenha456" "Pai"
-node scripts/criar-membro.mjs "mae@email.com" "maisUmaSenha78" "Mãe"
-```
-
-No **PowerShell** (prompt `PS C:\...>`) a sintaxe das variáveis muda:
-
-```powershell
-$env:SUPABASE_URL="https://xxxx.supabase.co"
-$env:SUPABASE_SERVICE_ROLE_KEY="eyJ..."
-```
-
-A chave está em **Configurações → Chaves de API**, como `service_role` ou
-como uma *secret key* `sb_secret_...`.
-
-> A `service_role` key ignora o RLS por completo. Use só no seu computador,
-> nunca dentro do app, nunca num repositório público.
-
----
-
-## Passo 5 — Rodar o app
-
-```powershell
-cd mobile
-copy .env.example .env      # preencha com a URL e a chave anon do Supabase
-npm install
-npx expo start
-```
-
-Escaneie o QR Code com o **Expo Go** no seu celular. É assim que você
-desenvolve e testa — rápido, recarrega sozinho a cada mudança.
-
----
-
-## Passo 6 — Gerar o APK para o celular dos seus pais
-
-O Expo Go **não** serve para entregar: ele exige que seus pais instalem o Expo
-Go, abram um link toda vez, e só funciona com o servidor de desenvolvimento
-rodando. O que você quer é um APK de verdade.
-
-```powershell
-cd mobile
-npx eas-cli@latest login
-npx eas-cli@latest build:configure
-
-# as variáveis precisam existir na nuvem também, não só no seu .env
-npx eas-cli@latest env:set preview --name EXPO_PUBLIC_SUPABASE_URL --value "https://xxxx.supabase.co" --visibility plaintext
-npx eas-cli@latest env:set preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "eyJ..." --visibility plaintext
-
-npx eas-cli@latest build --platform android --profile preview
-```
-
-> `preview` aqui aparece duas vezes por motivos diferentes: é o *ambiente*
-> onde a variável fica guardada e o *perfil de build* do `eas.json`. Eles têm
-> o mesmo nome de propósito — o perfil declara `"environment": "preview"`, e é
-> assim que o build encontra as variáveis.
-
-Em 10–20 minutos sai um link de download. Mande por WhatsApp para seus pais.
-No Android eles precisam autorizar **"instalar de fontes desconhecidas"** uma
-única vez — depois o ícone fica na tela inicial como qualquer outro app.
-
-### Atualizar sem gerar APK de novo
-
-Mudanças em JavaScript (telas, textos, cores, regras) vão pelo ar:
-
-```powershell
-npx eas-cli@latest update --branch preview --message "novas categorias"
-```
-
-Os celulares pegam a atualização sozinhos na próxima abertura. Só é preciso
-gerar um APK novo quando você adiciona uma biblioteca com código nativo.
-
----
+A regra que orienta todo o desenho: **as credenciais bancárias nunca entram no
+aplicativo.** Um APK é um arquivo ZIP — extrair strings dele é trivial. Por
+isso existe uma Edge Function no meio: ela guarda os segredos, conversa com a
+Pluggy e grava no banco o resultado já traduzido. O app só lê tabelas, sob Row
+Level Security.
 
 ## Bibliotecas e serviços
 
@@ -238,7 +86,7 @@ gerar um APK novo quando você adiciona uma biblioteca com código nativo.
 | TypeScript | ~6.0.3 | Tipagem |
 
 Os gráficos de barras são `View` com largura proporcional — nenhuma biblioteca
-de charts. Para barras simples, uma dependência a mais não se pagaria.
+de charts. Para desenhar retângulos, uma dependência a mais não se pagaria.
 
 ### Servidor
 
@@ -246,95 +94,49 @@ de charts. Para barras simples, uma dependência a mais não se pagaria.
 |---|---|
 | [Supabase](https://supabase.com) | Postgres, autenticação, RLS e Edge Functions |
 | [Deno](https://deno.com) | Runtime da Edge Function |
-| [Pluggy](https://pluggy.ai) | Open Finance — traz os extratos dos bancos |
+| [Pluggy](https://pluggy.ai) | Open Finance — traz os extratos |
 
-Nenhuma dependência externa no sincronizador além do próprio cliente Supabase:
-a conversa com a Pluggy é `fetch` puro.
+No sincronizador não há dependência externa além do cliente Supabase: a
+conversa com a Pluggy é `fetch` puro.
 
-## Como o app está organizado
+## Documentação
 
-```text
-mobile/src/
-  app/                    telas (cada arquivo é uma rota do Expo Router)
-    (tabs)/
-      index.tsx           Resumo: total do mês, gastos por categoria
-      transacoes.tsx      lista com busca e filtros
-      contas.tsx          saldos e sincronização
-      ajustes.tsx         orçamentos, perfil, sair
-    transacao/[id].tsx    editar categoria, pessoa, observação
-    lancamento.tsx        gasto em dinheiro (o que o banco não vê)
-    login.tsx
-  components/             peças de interface reutilizáveis
-  lib/
-    dados.tsx             estado compartilhado e consultas
-    sessao.tsx            login e perfil
-    supabase.ts           cliente
-    format.ts             moeda e datas em português
-    theme.ts              cores e medidas
+| | |
+|---|---|
+| [Instalação](docs/instalacao.md) | Do zero ao app rodando, passo a passo |
+| [Arquitetura](docs/arquitetura.md) | Como as peças se encaixam e por quê |
+| [Modelo de dados](docs/modelo-de-dados.md) | As sete tabelas, coluna por coluna |
+| [Sincronização](docs/sincronizacao.md) | A integração com a Pluggy e suas armadilhas |
+| [Segurança](docs/seguranca.md) | Onde vivem os segredos e o que protege o quê |
+| [Operação](docs/operacao.md) | Gerar o APK, agendar, investigar problemas |
 
-supabase/
-  migrations/             schema e agendamento
-  functions/sync-pluggy/  a única coisa que fala com a Pluggy
+> A integração com a Pluggy tem cinco armadilhas que não estão na
+> documentação oficial — endpoints descontinuados, um 401 que não é de
+> credencial e um cursor que quebra se for re-codificado. Estão todas
+> registradas em [sincronização](docs/sincronizacao.md), com o erro exato que
+> cada uma produz.
 
-scripts/criar-membro.mjs  cadastra uma pessoa da família
+## Começando
+
+```bash
+git clone <este-repositório>
+cd banco-fiscal/mobile
+cp .env.example .env     # preencha com seu projeto Supabase
+npm install
+npx expo start
 ```
 
----
+O app sozinho não faz nada: ele depende do banco e da Edge Function. O
+caminho completo está em [instalação](docs/instalacao.md).
 
-## Decisões que valem saber
+## Limites conhecidos
 
-**Sinal do valor.** A Pluggy manda `amount` sempre positivo e indica a direção
-num campo separado (`type: DEBIT | CREDIT`). O sincronizador normaliza isso
-para um número com sinal — negativo saiu, positivo entrou — para que somar uma
-coluna seja suficiente em qualquer tela.
+- **5 conexões bancárias, todas do mesmo CPF** — limite do plano gratuito do
+  Meu Pluggy. Cobre as contas de uma pessoa mais lançamentos manuais de todos.
+- **Uma família por instalação** — o RLS pressupõe que todos veem tudo.
+- **Sincronização puxada** — os dados chegam pelo botão ou pelo agendamento,
+  não por webhook.
 
-**Transações vêm por cursor, não por página.** O `GET /transactions` antigo
-foi descontinuado e responde `410 ENDPOINT_DEPRECATED`. O sincronizador usa
-`GET /v2/transactions`, onde cada resposta traz `next` com a URL completa da
-próxima página. Essa URL é usada **exatamente como veio** — o cursor é base64
-dentro da query string, e remontar a URL o re-codifica e invalida.
+## Licença
 
-**Suas edições sobrevivem à sincronização.** Quando o sincronizador regrava
-uma transação, ele manda só os campos que vêm do banco. Categoria, pessoa,
-observação e a marca de "não contar" ficam de fora do payload de propósito, e
-por isso não são sobrescritas.
-
-**Transferências não são gasto.** Mandar dinheiro do Caixa para o PagSeguro
-apareceria como saída de um lado e entrada do outro, inflando os dois totais.
-Marque a transação como "não contar nos totais" e ela some das somas sem
-sumir do histórico.
-
-**Categorização que aprende.** Ao categorizar um gasto, ligue *"sempre
-categorizar assim"*. Isso cria uma regra a partir das primeiras palavras da
-descrição, e as próximas sincronizações já chegam classificadas.
-
-**Gastos em dinheiro.** Banco nenhum enxerga a feira paga em espécie. O botão
-"Lançar gasto em dinheiro" no Resumo existe para isso, e esses lançamentos
-entram nos totais junto com o resto.
-
----
-
-## Comandos do dia a dia
-
-```bat
-cd mobile
-npx expo start              :: desenvolver
-npx tsc --noEmit            :: conferir tipos
-npx expo-doctor             :: diagnosticar dependências
-```
-
-```bat
-:: publicar mudanças no sincronizador
-npx supabase@latest functions deploy sync-pluggy --use-api --no-verify-jwt
-
-:: disparar uma sincronização
-curl -X POST "https://SEU-PROJETO.supabase.co/functions/v1/sync-pluggy" -H "x-cron-secret: SEU_CRON_SECRET" -H "Content-Type: application/json" -d "{}"
-```
-
-Para ver o que aconteceu, a CLI não ajuda — ela não tem comando de logs.
-Use o painel em **Edge Functions → sync-pluggy → Logs**, ou consulte a tabela
-`sincronizacoes`, que guarda o resultado de cada execução:
-
-```sql
-select * from sincronizacoes order by iniciada_em desc limit 10;
-```
+MIT — veja [LICENSE](LICENSE).
