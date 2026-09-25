@@ -1,0 +1,142 @@
+{
+  "_leia": [
+    "Copie para categorias.json e edite. Depois rode:",
+    "",
+    "  node scripts/aplicar-categorias.mjs --sugerir    ve o que ainda esta sem categoria",
+    "  node scripts/aplicar-categorias.mjs --conferir   mostra o que mudaria",
+    "  node scripts/aplicar-categorias.mjs              aplica",
+    "",
+    "Cada categoria tem um 'quando': a lista de trechos que a acionam.",
+    "O trecho e procurado dentro da descricao e do estabelecimento, sem",
+    "acento e em minusculas. 'mercado' pega 'SUPERMERCADO BOM PRECO'.",
+    "",
+    "Escreva trechos CURTOS e estaveis. Descricoes de banco terminam em",
+    "data ou numero de documento, que mudam a cada compra.",
+    "",
+    "A ordem importa: a primeira categoria do arquivo cujo trecho casar",
+    "vence. Ponha as mais especificas antes das genericas."
+  ],
+
+  "categorias": [
+    {
+      "nome": "Moradia",
+      "emoji": "🏠",
+      "cor": "#0ea5e9",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["aluguel", "condominio", "energia", "enel", "cemig", "copel", "light", "sabesp", "agua", "iptu"]
+    },
+    {
+      "nome": "Mercado",
+      "emoji": "🛒",
+      "cor": "#22c55e",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["mercado", "supermerc", "atacad", "assai", "carrefour", "big", "extra", "hortifruti", "sacolao", "padaria", "acougue"]
+    },
+    {
+      "nome": "Transporte",
+      "emoji": "🚗",
+      "cor": "#f59e0b",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["posto", "combustivel", "gasolina", "ipiranga", "shell", "petrobras", "uber", "99app", "99 tecnologia", "estacionamento", "pedagio", "onibus", "metro"]
+    },
+    {
+      "nome": "Saúde",
+      "emoji": "💊",
+      "cor": "#ef4444",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["farmacia", "drogaria", "droga raia", "drogasil", "pacheco", "unimed", "amil", "hapvida", "laboratorio", "clinica", "hospital", "dentista", "exame"]
+    },
+    {
+      "nome": "Educação",
+      "emoji": "📚",
+      "cor": "#8b5cf6",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["escola", "colegio", "faculdade", "universidade", "curso", "mensalidade", "livraria", "udemy", "alura"]
+    },
+    {
+      "nome": "Contas e assinaturas",
+      "emoji": "🧾",
+      "cor": "#6366f1",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["vivo", "claro", "tim ", "oi ", "internet", "netflix", "spotify", "amazon prime", "disney", "hbo", "max ", "youtube premium", "google one", "icloud", "microsoft", "seguro"]
+    },
+    {
+      "nome": "Restaurante",
+      "emoji": "🍽",
+      "cor": "#fb7185",
+      "tipo": "gasto",
+      "essencial": false,
+      "quando": ["ifood", "rappi", "restaurante", "lanchonete", "pizzaria", "hamburg", "burger", "mc donalds", "mcdonalds", "bk ", "subway", "cafe", "starbucks", "bar "]
+    },
+    {
+      "nome": "Lazer",
+      "emoji": "🎬",
+      "cor": "#ec4899",
+      "tipo": "gasto",
+      "essencial": false,
+      "quando": ["cinema", "cinemark", "teatro", "show", "ingresso", "steam", "playstation", "xbox", "nintendo", "academia", "smart fit"]
+    },
+    {
+      "nome": "Compras",
+      "emoji": "🛍",
+      "cor": "#14b8a6",
+      "tipo": "gasto",
+      "essencial": false,
+      "quando": ["amazon", "mercado livre", "mercadolivre", "shopee", "aliexpress", "magazine", "magalu", "americanas", "casas bahia", "renner", "riachuelo", "shopping"]
+    },
+    {
+      "nome": "Pets",
+      "emoji": "🐾",
+      "cor": "#a3a3a3",
+      "tipo": "gasto",
+      "essencial": false,
+      "quando": ["petz", "cobasi", "pet shop", "petshop", "veterinar", "racao"]
+    },
+    {
+      "nome": "Tarifas do banco",
+      "emoji": "🏦",
+      "cor": "#64748b",
+      "tipo": "gasto",
+      "essencial": true,
+      "quando": ["tarifa", "cesta de servicos", "anuidade", "juros", "iof", "manutencao de conta"]
+    },
+    {
+      "nome": "Outros",
+      "emoji": "💸",
+      "cor": "#64748b",
+      "tipo": "gasto",
+      "essencial": false,
+      "quando": []
+    },
+    {
+      "nome": "Salário",
+      "emoji": "💰",
+      "cor": "#16a34a",
+      "tipo": "receita",
+      "essencial": false,
+      "quando": ["salario", "pagamento de salario", "provento", "remuneracao", "folha"]
+    },
+    {
+      "nome": "Outras entradas",
+      "emoji": "📈",
+      "cor": "#059669",
+      "tipo": "receita",
+      "essencial": false,
+      "quando": ["rendimento", "cashback", "estorno", "restituicao"]
+    }
+  ],
+
+  "_sobre_ignorar": [
+    "Trechos aqui marcam a transacao como 'nao contar nos totais'.",
+    "Use SO para dinheiro que sai de uma conta sua e entra em outra sua.",
+    "Se voce nao acompanha o destino, NAO ignore: o gasto sumiria dos",
+    "totais sem aparecer em lugar nenhum."
+  ],
+  "ignorar": []
+}

@@ -1,5 +1,6 @@
 # Segredos — nunca commitar
 familia.json
+categorias.json
 .env
 .env.local
 *.key
