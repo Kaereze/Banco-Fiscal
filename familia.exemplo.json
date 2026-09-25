@@ -1,0 +1,39 @@
+{
+  "_leia": [
+    "Copie este arquivo para familia.json e preencha.",
+    "familia.json esta no .gitignore e nunca sobe para o GitHub.",
+    "Depois de editar, rode: node scripts/sincronizar-familia.mjs",
+    "Para ver o que mudaria sem aplicar: node scripts/sincronizar-familia.mjs --conferir"
+  ],
+
+  "supabase": {
+    "url": "https://SEU-PROJETO.supabase.co",
+    "serviceRoleKey": "cole-a-service-role-key-aqui"
+  },
+
+  "membros": [
+    {
+      "nome": "Seu Nome",
+      "email": "voce@email.com",
+      "senha": "trocarEstaSenha123",
+      "cor": "#2563eb"
+    },
+    {
+      "nome": "Pai",
+      "email": "pai@email.com",
+      "senha": "trocarEstaSenha456",
+      "cor": "#ea580c"
+    },
+    {
+      "nome": "Mae",
+      "email": "mae@email.com",
+      "senha": "trocarEstaSenha789",
+      "cor": "#db2777"
+    },
+    {
+      "_exemplo_de_remocao": "Para tirar o acesso de alguem, deixe o e-mail e acrescente remover",
+      "email": "ex-membro@email.com",
+      "remover": true
+    }
+  ]
+}

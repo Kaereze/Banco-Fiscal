@@ -152,9 +152,18 @@ O que fica de fora, e por quê:
 
 | Arquivo | Conteúdo | Ignorado em |
 |---|---|---|
+| `familia.json` | Senhas dos membros e a service role key | `.gitignore` |
 | `mobile/.env` | URL e chave anon do projeto | `mobile/.gitignore` |
 | `supabase/.env.secrets` | Credenciais da Pluggy | `.gitignore` |
 | `supabase/.temp/` | Estado local da CLI | `.gitignore` |
+
+Cada um tem um par `.example` versionado, com placeholders no lugar dos
+valores reais.
+
+> `familia.json` é o arquivo mais sensível do projeto: reúne, num lugar só, a
+> service role key e as senhas de todo mundo. Ele existe porque gerenciar
+> acesso de três pessoas por linha de comando é convidativo ao erro — mas
+> mantenha-o nesta máquina e fora de backup em nuvem sincronizada.
 
 Os arquivos `.example` trazem `00000000-0000-...` no lugar dos identificadores
 reais. O e-mail dos commits é o `@users.noreply.github.com` do GitHub, não o

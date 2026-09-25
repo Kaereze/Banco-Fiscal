@@ -139,13 +139,64 @@ não estiver rodando.
 
 ---
 
-## Manutenção
+## Gerenciar quem tem acesso
 
-### Trocar a senha de alguém
+O jeito prático: um arquivo com todo mundo e um comando que aplica.
 
 ```bat
+copy familia.exemplo.json familia.json
+notepad familia.json
+```
+
+```json
+{
+  "supabase": {
+    "url": "https://SEU-PROJETO.supabase.co",
+    "serviceRoleKey": "a-service-role-key"
+  },
+  "membros": [
+    { "nome": "João", "email": "joao@email.com", "senha": "umaSenhaBoa123", "cor": "#2563eb" },
+    { "nome": "Pai",  "email": "pai@email.com",  "senha": "outraSenha456",  "cor": "#ea580c" },
+    { "nome": "Mãe",  "email": "mae@email.com",  "senha": "maisUma789",     "cor": "#db2777" }
+  ]
+}
+```
+
+```bat
+node scripts/sincronizar-familia.mjs --conferir   :: mostra o que faria
+node scripts/sincronizar-familia.mjs              :: aplica
+```
+
+O script deixa o Supabase igual ao arquivo: cria quem falta, **redefine a
+senha** de quem já existe e atualiza nome e cor. É idempotente — rodar duas
+vezes seguidas não causa dano.
+
+Para tirar o acesso de alguém, mantenha o e-mail e acrescente a marca:
+
+```json
+{ "email": "ex-membro@email.com", "remover": true }
+```
+
+Quem tiver acesso ao app sem estar no arquivo aparece num aviso ao fim da
+execução. O script **nunca apaga por omissão** — some da lista não significa
+perder o acesso, justamente para um erro de edição não derrubar ninguém.
+
+> `familia.json` guarda senhas e a service role key. Está no `.gitignore` e
+> existe só na máquina do administrador. O que sobe é o
+> `familia.exemplo.json`, com placeholders.
+
+Para um cadastro avulso, sem arquivo, o
+[`scripts/criar-membro.mjs`](../scripts/criar-membro.mjs) continua servindo:
+
+```bat
+set "SUPABASE_URL=https://SEU-PROJETO.supabase.co"
+set "SUPABASE_SERVICE_ROLE_KEY=a-service-role-key"
 node scripts/criar-membro.mjs "email@dele.com" "novaSenha" "Nome"
 ```
+
+---
+
+## Manutenção
 
 ### Adicionar uma conta bancária
 
