@@ -1,5 +1,104 @@
 # Segurança
 
+## Verificação automática
+
+```bash
+node scripts/verificar-seguranca.mjs
+```
+
+Audita o setup inteiro e lista o que está aberto. Não altera nada e não
+imprime nenhum segredo — só comprimentos e vereditos. Sai com código 1 se
+houver falha, então serve em hook de pre-push.
+
+O que ele checa:
+
+| Área | Verificação |
+|---|---|
+| git | arquivos de segredo versionados, JWT no histórico, e-mail pessoal nos commits |
+| local | `familia.json` em pasta sincronizada com nuvem, força do `CRON_SECRET` |
+| senhas | comprimento e se contêm nome, e-mail ou termos de lista de ataque |
+| supabase | cadastro público aberto, provedores OAuth ligados sem uso |
+| dependências | vulnerabilidades altas e críticas |
+
+---
+
+## Endurecimento: o que só você pode fazer
+
+Nenhuma dessas é código. São as que mais importam.
+
+### 1. Rotacionar tudo que já apareceu em tela
+
+Credencial que passou por print, chat ou screenshot deve ser considerada
+pública. Rotacionar é barato; descobrir que vazou, não.
+
+### 2. Fechar o cadastro público
+
+**Authentication → Sign In / Providers → desligar "Allow new users to sign
+up".**
+
+A chave anon está dentro do APK, e extrair strings de um APK é trivial. Com o
+cadastro aberto, qualquer pessoa cria conta no seu projeto. Ela não verá dado
+algum — o RLS exige linha em `profiles` —, mas é superfície de ataque de graça
+e consumo da sua cota de e-mail.
+
+Com o cadastro fechado, contas nascem apenas pelo
+`scripts/sincronizar-familia.mjs`, com a service role.
+
+### 3. Ligar proteção contra senha vazada
+
+**Authentication → Policies → "Prevent use of leaked passwords".** O Supabase
+consulta o HaveIBeenPwned por hash parcial e recusa senhas que já apareceram
+em vazamentos conhecidos.
+
+### 4. Segundo fator nas contas que sustentam tudo
+
+Supabase, GitHub e Expo. Quem entrar na sua conta Supabase não precisa hackear
+nada: lê o banco pelo painel.
+
+### 5. Senhas de 16+ caracteres aleatórios
+
+Comprimento vence complexidade. `EFT9jsZ9VzuDAESw` resiste a força bruta
+muito melhor que `Joao9192!`, e é mais fácil de guardar num gerenciador do
+que de lembrar — que é exatamente onde ela deve estar.
+
+```bash
+node -e "console.log(require('node:crypto').randomBytes(12).toString('base64url'))"
+```
+
+### 6. O computador
+
+O `familia.json` reúne a service role key e as senhas de todo mundo. Quem tem
+acesso a essa máquina tem acesso a tudo — nenhuma configuração de servidor
+muda isso.
+
+| | Por quê |
+|---|---|
+| BitLocker ligado | Disco roubado vira só um disco |
+| Windows Update em dia | A maioria das invasões usa falha já corrigida |
+| Defender ativo, com proteção contra ransomware | O básico, que funciona |
+| Sem software pirata | Vetor número um de infostealer no Brasil |
+| Gerenciador de senhas | Em vez de reusar a mesma senha em tudo |
+| Conta de usuário sem privilégio de administrador no dia a dia | Limita o estrago de um clique errado |
+
+Infostealer é o que de fato ameaça este projeto: um malware que varre o disco
+atrás de arquivos como `.env` e `familia.json` e os envia. Ele não precisa
+quebrar criptografia nenhuma — só precisa que você execute um instalador
+baixado de onde não devia.
+
+---
+
+## Por que "impossível de hackear" não é uma meta
+
+Não existe sistema inviolável. O que existe é custo de ataque acima do valor
+do alvo. Este projeto não guarda dinheiro nem permite mover dinheiro — a API
+da Pluggy é somente leitura. O pior caso é alguém descobrir onde sua família
+faz compras.
+
+Contra o atacante realista — alguém que ache o repositório, ou um malware que
+varra o disco —, as medidas acima são o que importa. Contra um adversário com
+recursos de Estado interessado especificamente em você, nenhuma configuração
+de Supabase resolveria, e o problema não seria este app.
+
 Este projeto lê extrato bancário. O que está em jogo, se algo der errado, é o
 histórico financeiro completo de uma família — quanto entra, quanto sai, onde
 compra, quando viaja. Este documento diz onde cada segredo mora, o que protege
