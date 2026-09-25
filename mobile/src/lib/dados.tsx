@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { chaveMes, limitesDoMes } from '@/lib/format';
+import { chaveMes, deslocaMes, limitesDoMes } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -45,6 +45,8 @@ type ContextoDados = {
   transacoes: Transacao[];
   orcamentos: Orcamento[];
   ultimaSync: Sincronizacao | null;
+  /** Total gasto no mês anterior, para a comparação da Home. */
+  gastoMesAnterior: number | null;
 
   recarregar: () => Promise<void>;
   sincronizarPluggy: (completo?: boolean) => Promise<ResultadoSync>;
@@ -65,6 +67,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [ultimaSync, setUltimaSync] = useState<Sincronizacao | null>(null);
+  const [gastoMesAnterior, setGastoMesAnterior] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -73,9 +76,17 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
     if (!sessao) return;
     setErro(null);
     const { inicio, fim } = limitesDoMes(mes);
+    const anterior = limitesDoMes(deslocaMes(mes, -1));
 
     try {
-      const [resCategorias, resContas, resTransacoes, resOrcamentos, resSync] = await Promise.all([
+      const [
+        resCategorias,
+        resContas,
+        resTransacoes,
+        resOrcamentos,
+        resSync,
+        resAnterior,
+      ] = await Promise.all([
         supabase.from('categorias').select('*').order('ordem'),
         supabase.from('contas').select('*').eq('ativa', true).order('instituicao'),
         supabase
@@ -92,6 +103,15 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
           .order('iniciada_em', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        // Só o necessário para somar: a Home compara com o mês passado,
+        // não mostra os lançamentos dele.
+        supabase
+          .from('transacoes')
+          .select('valor')
+          .gte('data', anterior.inicio)
+          .lte('data', anterior.fim)
+          .eq('ignorada', false)
+          .lt('valor', 0),
       ]);
 
       const falha = [resCategorias, resContas, resTransacoes, resOrcamentos].find((r) => r.error);
@@ -102,6 +122,13 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
       setTransacoes((resTransacoes.data ?? []) as Transacao[]);
       setOrcamentos((resOrcamentos.data ?? []) as Orcamento[]);
       setUltimaSync((resSync.data ?? null) as Sincronizacao | null);
+
+      const linhasAnteriores = (resAnterior.data ?? []) as { valor: number }[];
+      setGastoMesAnterior(
+        resAnterior.error
+          ? null
+          : linhasAnteriores.reduce((soma, l) => soma - Number(l.valor), 0),
+      );
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui carregar os dados.');
     } finally {
@@ -224,6 +251,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
       transacoes,
       orcamentos,
       ultimaSync,
+      gastoMesAnterior,
       recarregar,
       sincronizarPluggy,
       editarTransacao,
@@ -242,6 +270,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
       transacoes,
       orcamentos,
       ultimaSync,
+      gastoMesAnterior,
       recarregar,
       sincronizarPluggy,
       editarTransacao,

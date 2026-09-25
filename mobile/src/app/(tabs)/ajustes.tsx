@@ -4,11 +4,12 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-nati
 
 import { SeletorMes } from '@/components/SeletorMes';
 import { Botao, Cartao, Titulo } from '@/components/ui';
+import { Sobe } from '@/components/animacao';
 import { conteudoCentralizado } from '@/components/Pagina';
 import { resumirMes, useDados } from '@/lib/dados';
 import { mesPorExtenso, moeda, numeroDoTexto } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
-import { cores, espaco, fonte, raio } from '@/lib/theme';
+import { cores, espaco, fonte, raio, textoSobre } from '@/lib/theme';
 import type { Categoria } from '@/lib/types';
 
 export default function Ajustes() {
@@ -33,9 +34,10 @@ export default function Ajustes() {
   return (
     <ScrollView contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}>
       {/* ---------- Quem está usando ---------- */}
+      <Sobe indice={0}>
       <Cartao style={estilos.perfil}>
         <View style={[estilos.avatar, { backgroundColor: perfil?.cor ?? cores.primaria }]}>
-          <Text style={estilos.avatarTexto}>
+          <Text style={[estilos.avatarTexto, { color: textoSobre(perfil?.cor ?? cores.primaria) }]}>
             {(perfil?.nome ?? sessao?.user.email ?? '?').charAt(0).toUpperCase()}
           </Text>
         </View>
@@ -46,6 +48,7 @@ export default function Ajustes() {
           </Text>
         </View>
       </Cartao>
+      </Sobe>
 
       {!perfil ? (
         <Cartao style={{ gap: espaco.sm }}>
@@ -204,7 +207,7 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarTexto: { fontSize: fonte.titulo, fontWeight: '800', color: '#ffffff' },
+  avatarTexto: { fontSize: fonte.titulo, fontWeight: '800' },
   perfilNome: { fontSize: fonte.subtitulo, fontWeight: '700', color: cores.texto },
   perfilEmail: { fontSize: fonte.apoio, color: cores.textoFraco },
   aviso: { fontSize: fonte.apoio, color: cores.alerta, lineHeight: 22, fontWeight: '600' },

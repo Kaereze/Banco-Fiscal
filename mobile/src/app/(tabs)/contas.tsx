@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Aviso, Botao, Cartao, Titulo, Vazio } from '@/components/ui';
+import { Sobe } from '@/components/animacao';
 import { conteudoCentralizado } from '@/components/Pagina';
 import { useDados } from '@/lib/dados';
 import { moeda, tempoDesde } from '@/lib/format';
@@ -44,6 +45,7 @@ export default function Contas() {
         </Cartao>
       ) : (
         <>
+          <Sobe indice={0}>
           <Cartao style={estilos.destaque}>
             <Text style={estilos.rotuloDestaque}>Saldo somado das contas</Text>
             <Text style={[estilos.numeroDestaque, totalEmConta < 0 && { color: cores.saida }]}>
@@ -51,23 +53,28 @@ export default function Contas() {
               {moeda(totalEmConta)}
             </Text>
           </Cartao>
+          </Sobe>
 
           {emConta.length > 0 ? (
-            <View style={estilos.secao}>
-              <Titulo>Contas</Titulo>
-              {emConta.map((conta) => (
-                <CartaoConta key={conta.id} conta={conta} />
-              ))}
-            </View>
+            <Sobe indice={1}>
+              <View style={estilos.secao}>
+                <Titulo>Contas</Titulo>
+                {emConta.map((conta) => (
+                  <CartaoConta key={conta.id} conta={conta} />
+                ))}
+              </View>
+            </Sobe>
           ) : null}
 
           {cartoes.length > 0 ? (
-            <View style={estilos.secao}>
-              <Titulo>Cartões de crédito</Titulo>
-              {cartoes.map((conta) => (
-                <CartaoConta key={conta.id} conta={conta} cartao />
-              ))}
-            </View>
+            <Sobe indice={2}>
+              <View style={estilos.secao}>
+                <Titulo>Cartões de crédito</Titulo>
+                {cartoes.map((conta) => (
+                  <CartaoConta key={conta.id} conta={conta} cartao />
+                ))}
+              </View>
+            </Sobe>
           ) : null}
         </>
       )}

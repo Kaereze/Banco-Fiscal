@@ -9,7 +9,7 @@ import {
   type ViewProps,
 } from 'react-native';
 
-import { ALTURA_TOQUE, cores, espaco, fonte, raio, sombra } from '@/lib/theme';
+import { ALTURA_TOQUE, cores, espaco, fonte, raio, sombra, textoSobre } from '@/lib/theme';
 
 // ------------------------------------------------------------
 export function Cartao({ style, ...resto }: ViewProps) {
@@ -45,7 +45,7 @@ export function Botao({
   const fundo =
     variante === 'primario' ? cores.primaria : variante === 'perigo' ? cores.saidaSuave : cores.superficieSuave;
   const corTexto =
-    variante === 'primario' ? '#ffffff' : variante === 'perigo' ? cores.saida : cores.texto;
+    variante === 'primario' ? textoSobre(cores.primaria) : variante === 'perigo' ? cores.saida : cores.texto;
 
   return (
     <Pressable
@@ -132,7 +132,7 @@ export function Pilula({
         pressed && { opacity: 0.8 },
       ]}
     >
-      <Text style={[estilos.pilulaTexto, { color: ativa ? '#ffffff' : cores.textoSuave }]}>
+      <Text style={[estilos.pilulaTexto, { color: ativa ? textoSobre(cor) : cores.textoSuave }]}>
         {texto}
       </Text>
     </Pressable>

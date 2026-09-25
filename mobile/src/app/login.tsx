@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Aviso, Botao, Campo } from '@/components/ui';
+import { Sobe } from '@/components/animacao';
 import { conteudoCentralizado } from '@/components/Pagina';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte } from '@/lib/theme';
@@ -49,13 +50,15 @@ export default function Login() {
           contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={estilos.marca}>
-            <Text style={estilos.emoji}>🏦</Text>
-            <Text style={estilos.titulo}>Banco Fiscal</Text>
-            <Text style={estilos.subtitulo}>Os gastos da família, num lugar só.</Text>
-          </View>
+          <Sobe indice={0}>
+            <View style={estilos.marca}>
+              <Text style={estilos.emoji}>🏦</Text>
+              <Text style={estilos.titulo}>Banco Fiscal</Text>
+              <Text style={estilos.subtitulo}>Os gastos da família, num lugar só.</Text>
+            </View>
+          </Sobe>
 
-          <View style={estilos.formulario}>
+          <Sobe indice={1} style={estilos.formulario}>
             <Campo
               rotulo="E-mail"
               value={email}
@@ -87,7 +90,7 @@ export default function Login() {
               As contas são criadas por quem administra o app. Se não conseguir entrar, peça para
               criarem a sua.
             </Text>
-          </View>
+          </Sobe>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

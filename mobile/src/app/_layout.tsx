@@ -12,7 +12,7 @@ export default function LayoutRaiz() {
     <SafeAreaProvider>
       <ProvedorSessao>
         <Navegacao />
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
       </ProvedorSessao>
     </SafeAreaProvider>
   );

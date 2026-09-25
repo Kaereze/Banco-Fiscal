@@ -1,33 +1,52 @@
 /**
  * Paleta e medidas do app.
  *
- * O app vai rodar no celular dos meus pais, entao a tipografia e os alvos
- * de toque sao propositalmente maiores que o padrao: corpo em 17px e
- * nenhum botao com menos de 48px de altura.
+ * Tema escuro: fundo quase preto, com verde e azul como únicos acentos.
+ * Nada aqui é literal nas telas — elas só consomem estes tokens, então
+ * trocar a paleta inteira acontece neste arquivo.
+ *
+ * O app roda no celular dos meus pais, então a tipografia e os alvos de
+ * toque são propositalmente maiores que o padrão: corpo em 17px e nenhum
+ * botão com menos de 48px de altura.
  */
 
 export const cores = {
-  fundo: '#f4f6fa',
-  superficie: '#ffffff',
-  superficieSuave: '#eef2f8',
+  // Fundos, do mais profundo ao mais elevado
+  fundo: '#07090d',
+  superficie: '#11151d',
+  superficieSuave: '#1a1f2a',
 
-  texto: '#0f172a',
-  textoSuave: '#475569',
-  textoFraco: '#94a3b8',
+  texto: '#eef2f7',
+  textoSuave: '#9aa7b8',
+  textoFraco: '#606d80',
 
-  borda: '#e2e8f0',
+  borda: '#212836',
 
-  primaria: '#2563eb',
-  primariaSuave: '#dbeafe',
+  // Azul — navegação, ações, seleção
+  primaria: '#3b82f6',
+  primariaSuave: '#13233d',
 
-  saida: '#dc2626',
-  saidaSuave: '#fee2e2',
-  entrada: '#15803d',
-  entradaSuave: '#dcfce7',
+  // Verde — entradas de dinheiro e confirmações
+  entrada: '#22c55e',
+  entradaSuave: '#0d2a19',
 
-  alerta: '#b45309',
-  alertaSuave: '#fef3c7',
+  // Saídas: vermelho dessaturado, que no escuro não vibra
+  saida: '#f87171',
+  saidaSuave: '#2d1518',
+
+  alerta: '#fbbf24',
+  alertaSuave: '#2e2311',
 } as const;
+
+/** Gradiente de apoio para as barras de categoria sem cor própria. */
+export const ACENTOS = [
+  cores.primaria,
+  cores.entrada,
+  '#38bdf8',
+  '#4ade80',
+  '#60a5fa',
+  '#2dd4bf',
+] as const;
 
 export const espaco = {
   xs: 4,
@@ -55,13 +74,36 @@ export const fonte = {
   mini: 13,
 } as const;
 
-/** Sombra discreta, com o equivalente em elevation para o Android. */
+/**
+ * No escuro a sombra some — o que separa os planos é a borda sutil e a
+ * diferença de luminosidade entre fundo e superfície. A elevation fica
+ * para o Android, onde ainda ajuda a destacar os cartões.
+ */
 export const sombra = {
-  shadowColor: '#0f172a',
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 4 },
+  borderWidth: 1,
+  borderColor: cores.borda,
   elevation: 2,
 } as const;
 
 export const ALTURA_TOQUE = 48;
+
+/**
+ * Cor de texto legível sobre um preenchimento sólido qualquer.
+ *
+ * Branco sobre o azul funciona; sobre o verde ou o âmbar, não — a razão de
+ * contraste cai para perto de 2:1 e o rótulo some. Em vez de decorar exceções
+ * por cor, calculamos a luminância e deixamos a matemática decidir.
+ */
+export function textoSobre(fundo: string): string {
+  const hex = fundo.replace('#', '');
+  if (hex.length !== 6) return '#ffffff';
+
+  const canal = (inicio: number) => {
+    const v = parseInt(hex.slice(inicio, inicio + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+
+  // Luminância relativa, fórmula da WCAG.
+  const luminancia = 0.2126 * canal(0) + 0.7152 * canal(2) + 0.0722 * canal(4);
+  return luminancia > 0.35 ? '#06120a' : '#ffffff';
+}

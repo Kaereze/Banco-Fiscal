@@ -37,6 +37,13 @@ export default function LayoutAbas() {
       <Tabs.Screen
         name="index"
         options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="resumo"
+        options={{
           title: 'Resumo',
           tabBarIcon: ({ color, size }) => <Ionicons name="pie-chart" size={size} color={color} />,
         }}
