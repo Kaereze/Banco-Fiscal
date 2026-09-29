@@ -5,12 +5,14 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   LinearTransition,
+  ZoomIn,
   type BaseAnimationBuilder,
 } from 'react-native-reanimated';
 
 import { aoTerminar as quandoTerminar } from './sequencia';
 
 export { aoTerminar } from './sequencia';
+export { DURACAO_TRANSICAO, useTransicao } from './transicao';
 
 const DURACAO = 420;
 const ESCALONAMENTO = 55;
@@ -22,7 +24,7 @@ type EntradaProps = ViewProps & {
   aoTerminar?: () => void;
 };
 
-type Construtor = typeof FadeInDown | typeof FadeInUp | typeof FadeIn;
+type Construtor = typeof FadeInDown | typeof FadeInUp | typeof FadeIn | typeof ZoomIn;
 
 function entrada(construtor: Construtor, indice: number, aoTerminar?: () => void): BaseAnimationBuilder {
   const animacao = construtor
@@ -50,6 +52,14 @@ export function Desce({ children, indice = 0, aoTerminar, ...resto }: EntradaPro
 export function Surge({ children, indice = 0, aoTerminar, ...resto }: EntradaProps) {
   return (
     <Animated.View entering={entrada(FadeIn, indice, aoTerminar)} {...resto}>
+      {children}
+    </Animated.View>
+  );
+}
+
+export function Estoura({ children, indice = 0, aoTerminar, ...resto }: EntradaProps) {
+  return (
+    <Animated.View entering={entrada(ZoomIn, indice, aoTerminar)} {...resto}>
       {children}
     </Animated.View>
   );

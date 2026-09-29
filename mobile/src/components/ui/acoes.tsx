@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Estoura } from '@/components/animacao';
 import type { NomeIcone } from '@/components/ui/icone';
 import {
   ALTURA_BOTAO,
@@ -29,6 +30,8 @@ export function Botao({
   icone,
   carregando = false,
   desabilitado = false,
+  confirmado = false,
+  aoConfirmar,
 }: {
   titulo: string;
   onPress: () => void;
@@ -36,8 +39,11 @@ export function Botao({
   icone?: NomeIcone;
   carregando?: boolean;
   desabilitado?: boolean;
+  confirmado?: boolean;
+  aoConfirmar?: () => void;
 }) {
-  const inativo = desabilitado || carregando;
+  const inativo = desabilitado || carregando || confirmado;
+  const apagado = (desabilitado || carregando) && !confirmado;
   const { fundo, texto, borda } = CORES_BOTAO[variante];
 
   return (
@@ -45,15 +51,19 @@ export function Botao({
       onPress={onPress}
       disabled={inativo}
       accessibilityRole="button"
-      accessibilityLabel={titulo}
+      accessibilityLabel={confirmado ? `${titulo}: concluído` : titulo}
       accessibilityState={{ disabled: inativo, busy: carregando }}
       style={({ pressed }) => [
         estilos.botao,
         variante !== 'primario' && estilos.botaoSecundario,
-        { backgroundColor: fundo, borderColor: borda, opacity: inativo ? 0.55 : pressed ? 0.85 : 1 },
+        { backgroundColor: fundo, borderColor: borda, opacity: apagado ? 0.55 : pressed ? 0.85 : 1 },
       ]}
     >
-      {carregando ? (
+      {confirmado ? (
+        <Estoura aoTerminar={aoConfirmar}>
+          <Ionicons name="checkmark-circle" size={28} color={texto} />
+        </Estoura>
+      ) : carregando ? (
         <ActivityIndicator color={texto} />
       ) : (
         <>

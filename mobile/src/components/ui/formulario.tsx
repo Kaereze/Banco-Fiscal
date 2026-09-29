@@ -2,9 +2,21 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode, Ref } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View, type TextInputProps } from 'react-native';
 
+import Animated, { interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
+
+import { Estoura, useTransicao } from '@/components/animacao';
 import { Cartao, Rotulo } from '@/components/ui/blocos';
 import type { NomeIcone } from '@/components/ui/icone';
 import { ALTURA_CAMPO, cores, espaco, fonte, raio, textoSobre } from '@/lib/theme';
+
+type CampoProps = TextInputProps & {
+  rotulo?: string;
+  dica?: string;
+  icone?: NomeIcone;
+  ref?: Ref<TextInput>;
+  confirmado?: boolean;
+  aoConfirmar?: () => void;
+};
 
 export function Campo({
   rotulo,
@@ -12,21 +24,38 @@ export function Campo({
   icone,
   style,
   ref,
+  confirmado = false,
+  aoConfirmar,
+  editable,
   ...resto
-}: TextInputProps & { rotulo?: string; dica?: string; icone?: NomeIcone; ref?: Ref<TextInput> }) {
+}: CampoProps) {
+  const progresso = useTransicao(confirmado, aoConfirmar);
+
+  const estiloConfirmacao = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(progresso.value, [0, 1], [cores.borda, cores.entrada]),
+    backgroundColor: interpolateColor(progresso.value, [0, 1], [cores.superficie, cores.entradaSuave]),
+  }));
+
   return (
     <View style={estilos.grupo}>
       {rotulo ? <Rotulo>{rotulo}</Rotulo> : null}
-      <View style={estilos.campo}>
-        {icone ? <Ionicons name={icone} size={20} color={cores.textoFraco} /> : null}
+      <Animated.View style={[estilos.campo, estiloConfirmacao]}>
+        {confirmado ? (
+          <Estoura>
+            <Ionicons name="checkmark-circle" size={20} color={cores.entrada} />
+          </Estoura>
+        ) : icone ? (
+          <Ionicons name={icone} size={20} color={cores.textoFraco} />
+        ) : null}
         <TextInput
           ref={ref}
           placeholderTextColor={cores.textoFraco}
           accessibilityLabel={rotulo ?? resto.placeholder}
-          style={[estilos.campoTexto, style]}
+          editable={!confirmado && editable !== false}
+          style={[estilos.campoTexto, confirmado && estilos.campoConfirmado, style]}
           {...resto}
         />
-      </View>
+      </Animated.View>
       {dica ? <Text style={estilos.dica}>{dica}</Text> : null}
     </View>
   );
@@ -117,6 +146,7 @@ const estilos = StyleSheet.create({
     fontSize: fonte.corpo,
     color: cores.texto,
   },
+  campoConfirmado: { color: cores.verdeEscuro, fontWeight: '600' },
   dica: { fontSize: fonte.mini, color: cores.textoFraco },
   pilula: {
     minHeight: 40,
