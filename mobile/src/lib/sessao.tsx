@@ -15,6 +15,12 @@ type ContextoSessao = {
    * null, e sem essa distinção a tela ficaria carregando para sempre.
    */
   perfilResolvido: boolean;
+  /**
+   * true logo depois de um login com senha, até a abertura terminar. Não
+   * liga quando a sessão vem salva do aparelho.
+   */
+  aberturaPendente: boolean;
+  concluirAbertura: () => void;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => Promise<void>;
 };
@@ -26,6 +32,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [perfilResolvido, setPerfilResolvido] = useState(false);
   const [carregando, setCarregando] = useState(true);
+  const [aberturaPendente, setAberturaPendente] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -70,18 +77,22 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       perfil,
       carregando,
       perfilResolvido,
+      aberturaPendente,
+      concluirAbertura: () => setAberturaPendente(false),
       entrar: async (email, senha) => {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: senha,
         });
         if (error) throw new Error(traduzErroDeLogin(error.message));
+        setAberturaPendente(true);
       },
       sair: async () => {
+        setAberturaPendente(false);
         await supabase.auth.signOut();
       },
     }),
-    [sessao, perfil, carregando, perfilResolvido],
+    [sessao, perfil, carregando, perfilResolvido, aberturaPendente],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

@@ -38,6 +38,15 @@ export const cores = {
   alertaSuave: '#2e2311',
 } as const;
 
+/** Dourado da logo e da moeda da abertura, do mais fundo ao brilho. */
+export const ouro = {
+  escuro: '#a8740f',
+  medio: '#d49a1e',
+  base: '#f0bb34',
+  claro: '#f9d66b',
+  brilho: '#fff1b8',
+} as const;
+
 /** Gradiente de apoio para as barras de categoria sem cor própria. */
 export const ACENTOS = [
   cores.primaria,

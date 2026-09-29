@@ -1,8 +1,8 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Abertura, TelaDeEspera } from '@/components/Abertura';
 import { ProvedorDados } from '@/lib/dados';
 import { ProvedorSessao, useSessao } from '@/lib/sessao';
 import { cores, fonte } from '@/lib/theme';
@@ -19,17 +19,11 @@ export default function LayoutRaiz() {
 }
 
 function Navegacao() {
-  const { sessao, carregando } = useSessao();
+  const { sessao, carregando, perfil, aberturaPendente, concluirAbertura } = useSessao();
 
-  // Enquanto não sabemos se há sessão salva, uma tela em branco evita o
+  // Enquanto não sabemos se há sessão salva, a tela de espera evita o
   // piscar do login para quem já está logado.
-  if (carregando) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cores.fundo }}>
-        <ActivityIndicator size="large" color={cores.primaria} />
-      </View>
-    );
-  }
+  if (carregando) return <TelaDeEspera />;
 
   return (
     <ProvedorDados>
@@ -58,6 +52,11 @@ function Navegacao() {
           <Stack.Screen name="login" options={{ headerShown: false }} />
         </Stack.Protected>
       </Stack>
+
+      {/* Cobre as abas enquanto elas carregam os dados por baixo. */}
+      {aberturaPendente && sessao ? (
+        <Abertura nome={perfil?.nome} aoConcluir={concluirAbertura} />
+      ) : null}
     </ProvedorDados>
   );
 }
