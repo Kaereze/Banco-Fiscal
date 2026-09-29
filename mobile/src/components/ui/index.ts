@@ -3,3 +3,4 @@ export { CabecalhoTela, Cartao, Rotulo, Secao, Separador, Titulo } from './bloco
 export { Aviso, Carregando, Vazio } from './estados';
 export { Campo, Chave, GradePilulas, Pilula } from './formulario';
 export type { NomeIcone } from './icone';
+export type { Resultado } from './resultado';

@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { Estoura } from '@/components/animacao';
 import type { NomeIcone } from '@/components/ui/icone';
+import { APARENCIA_RESULTADO, type Resultado } from '@/components/ui/resultado';
 import {
   ALTURA_BOTAO,
   ALTURA_TOQUE,
@@ -30,8 +31,8 @@ export function Botao({
   icone,
   carregando = false,
   desabilitado = false,
-  confirmado = false,
-  aoConfirmar,
+  resultado,
+  aoMostrarResultado,
 }: {
   titulo: string;
   onPress: () => void;
@@ -39,19 +40,23 @@ export function Botao({
   icone?: NomeIcone;
   carregando?: boolean;
   desabilitado?: boolean;
-  confirmado?: boolean;
-  aoConfirmar?: () => void;
+  resultado?: Resultado;
+  aoMostrarResultado?: () => void;
 }) {
-  const inativo = desabilitado || carregando || confirmado;
-  const apagado = (desabilitado || carregando) && !confirmado;
-  const { fundo, texto, borda } = CORES_BOTAO[variante];
+  const inativo = desabilitado || carregando || resultado !== undefined;
+  const apagado = (desabilitado || carregando) && resultado === undefined;
+  const padrao = CORES_BOTAO[variante];
+  const aparencia = resultado ? APARENCIA_RESULTADO[resultado] : null;
+  const fundo = aparencia ? aparencia.cor : padrao.fundo;
+  const borda = aparencia ? aparencia.cor : padrao.borda;
+  const texto = aparencia ? textoSobre(aparencia.cor) : padrao.texto;
 
   return (
     <Pressable
       onPress={onPress}
       disabled={inativo}
       accessibilityRole="button"
-      accessibilityLabel={confirmado ? `${titulo}: concluído` : titulo}
+      accessibilityLabel={resultado ? `${titulo}: ${resultado === 'sucesso' ? 'concluído' : 'não deu certo'}` : titulo}
       accessibilityState={{ disabled: inativo, busy: carregando }}
       style={({ pressed }) => [
         estilos.botao,
@@ -59,9 +64,9 @@ export function Botao({
         { backgroundColor: fundo, borderColor: borda, opacity: apagado ? 0.55 : pressed ? 0.85 : 1 },
       ]}
     >
-      {confirmado ? (
-        <Estoura aoTerminar={aoConfirmar}>
-          <Ionicons name="checkmark-circle" size={28} color={texto} />
+      {aparencia ? (
+        <Estoura key={resultado} aoTerminar={aoMostrarResultado}>
+          <Ionicons name={aparencia.icone} size={28} color={texto} />
         </Estoura>
       ) : carregando ? (
         <ActivityIndicator color={texto} />

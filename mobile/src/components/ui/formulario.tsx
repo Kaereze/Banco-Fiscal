@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode, Ref } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View, type TextInputProps } from 'react-native';
-
 import Animated, { interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 
 import { Estoura, useTransicao } from '@/components/animacao';
 import { Cartao, Rotulo } from '@/components/ui/blocos';
 import type { NomeIcone } from '@/components/ui/icone';
+import { APARENCIA_RESULTADO, type Resultado } from '@/components/ui/resultado';
 import { ALTURA_CAMPO, cores, espaco, fonte, raio, textoSobre } from '@/lib/theme';
 
 type CampoProps = TextInputProps & {
@@ -14,8 +14,8 @@ type CampoProps = TextInputProps & {
   dica?: string;
   icone?: NomeIcone;
   ref?: Ref<TextInput>;
-  confirmado?: boolean;
-  aoConfirmar?: () => void;
+  resultado?: Resultado;
+  aoMostrarResultado?: () => void;
 };
 
 export function Campo({
@@ -24,25 +24,32 @@ export function Campo({
   icone,
   style,
   ref,
-  confirmado = false,
-  aoConfirmar,
+  resultado,
+  aoMostrarResultado,
   editable,
   ...resto
 }: CampoProps) {
-  const progresso = useTransicao(confirmado, aoConfirmar);
+  const sucesso = useTransicao(resultado === 'sucesso', aoMostrarResultado);
+  const erro = useTransicao(resultado === 'erro', aoMostrarResultado);
 
-  const estiloConfirmacao = useAnimatedStyle(() => ({
-    borderColor: interpolateColor(progresso.value, [0, 1], [cores.borda, cores.entrada]),
-    backgroundColor: interpolateColor(progresso.value, [0, 1], [cores.superficie, cores.entradaSuave]),
-  }));
+  const estiloResultado = useAnimatedStyle(() => {
+    const bordaComErro = interpolateColor(erro.value, [0, 1], [cores.borda, cores.saida]);
+    const fundoComErro = interpolateColor(erro.value, [0, 1], [cores.superficie, cores.saidaSuave]);
+    return {
+      borderColor: interpolateColor(sucesso.value, [0, 1], [bordaComErro, cores.entrada]),
+      backgroundColor: interpolateColor(sucesso.value, [0, 1], [fundoComErro, cores.entradaSuave]),
+    };
+  });
+
+  const aparencia = resultado ? APARENCIA_RESULTADO[resultado] : null;
 
   return (
     <View style={estilos.grupo}>
       {rotulo ? <Rotulo>{rotulo}</Rotulo> : null}
-      <Animated.View style={[estilos.campo, estiloConfirmacao]}>
-        {confirmado ? (
-          <Estoura>
-            <Ionicons name="checkmark-circle" size={20} color={cores.entrada} />
+      <Animated.View style={[estilos.campo, estiloResultado]}>
+        {aparencia ? (
+          <Estoura key={resultado}>
+            <Ionicons name={aparencia.icone} size={20} color={aparencia.cor} />
           </Estoura>
         ) : icone ? (
           <Ionicons name={icone} size={20} color={cores.textoFraco} />
@@ -51,8 +58,8 @@ export function Campo({
           ref={ref}
           placeholderTextColor={cores.textoFraco}
           accessibilityLabel={rotulo ?? resto.placeholder}
-          editable={!confirmado && editable !== false}
-          style={[estilos.campoTexto, confirmado && estilos.campoConfirmado, style]}
+          editable={resultado !== 'sucesso' && editable !== false}
+          style={[estilos.campoTexto, aparencia && { color: aparencia.cor, fontWeight: '600' }, style]}
           {...resto}
         />
       </Animated.View>
@@ -146,7 +153,6 @@ const estilos = StyleSheet.create({
     fontSize: fonte.corpo,
     color: cores.texto,
   },
-  campoConfirmado: { color: cores.verdeEscuro, fontWeight: '600' },
   dica: { fontSize: fonte.mini, color: cores.textoFraco },
   pilula: {
     minHeight: 40,
