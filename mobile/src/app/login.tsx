@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -15,21 +16,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sobe } from '@/components/animacao';
 import { conteudoCentralizado } from '@/components/layout/Tela';
 import { Logo, NOME_DO_APP } from '@/components/marca/Logo';
-import { Aviso, Botao, Campo, type Resultado } from '@/components/ui';
+import { Botao, Campo, type Resultado } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
 const ESPERA_MAXIMA_POR_ETAPA = 3000;
 
-type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao' | 'aviso';
-
-const ETAPAS_ANIMADAS: Etapa[] = ['campos', 'botao', 'aviso'];
+type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao';
 
 export default function Login() {
   const { entrar, concluirLogin } = useSessao();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [erro, setErro] = useState<string | null>(null);
   const [etapa, setEtapa] = useState<Etapa>('formulario');
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const campoSenha = useRef<TextInput>(null);
@@ -40,14 +38,9 @@ export default function Login() {
   }, [resultado, concluirLogin]);
 
   const camposMostrados = useCallback(() => setEtapa('botao'), []);
-  const botaoMostrado = useCallback(() => {
-    if (resultado === 'sucesso') concluirLogin();
-    else setEtapa('aviso');
-  }, [resultado, concluirLogin]);
-  const avisoMostrado = useCallback(() => setEtapa('formulario'), []);
 
   useEffect(() => {
-    if (!ETAPAS_ANIMADAS.includes(etapa)) return;
+    if (etapa !== 'campos' && etapa !== 'botao') return;
     const limite = setTimeout(finalizar, ESPERA_MAXIMA_POR_ETAPA);
     return () => clearTimeout(limite);
   }, [etapa, finalizar]);
@@ -55,36 +48,35 @@ export default function Login() {
   function editar(atualizar: (valor: string) => void) {
     return (valor: string) => {
       atualizar(valor);
-      if (etapa === 'formulario' && resultado === 'erro') {
-        setResultado(null);
-        setErro(null);
-      }
+      if (etapa === 'formulario' && resultado === 'erro') setResultado(null);
     };
+  }
+
+  function mostrar(novo: Resultado, mensagem?: string) {
+    Keyboard.dismiss();
+    if (mensagem) AccessibilityInfo.announceForAccessibility(mensagem);
+    setResultado(novo);
+    setEtapa('campos');
   }
 
   async function aoEntrar() {
     if (etapa !== 'formulario') return;
     setResultado(null);
     if (!email.trim() || !senha) {
-      setErro('Preencha o e-mail e a senha.');
+      mostrar('erro', 'Preencha o e-mail e a senha.');
       return;
     }
     setEtapa('enviando');
-    setErro(null);
     try {
       await entrar(email, senha);
-      setResultado('sucesso');
+      mostrar('sucesso');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não consegui entrar.');
-      setResultado('erro');
+      mostrar('erro', e instanceof Error ? e.message : 'Não consegui entrar.');
     }
-    Keyboard.dismiss();
-    setEtapa('campos');
   }
 
   const resultadoDosCampos = etapa === 'enviando' || !resultado ? undefined : resultado;
-  const resultadoDoBotao = (etapa === 'botao' || etapa === 'aviso') && resultado ? resultado : undefined;
-  const mostrarAviso = erro !== null && (etapa === 'aviso' || etapa === 'formulario');
+  const resultadoDoBotao = etapa === 'botao' && resultado ? resultado : undefined;
 
   function esqueciASenha() {
     Alert.alert(
@@ -140,18 +132,12 @@ export default function Login() {
               resultado={resultadoDosCampos}
             />
 
-            {mostrarAviso && erro ? (
-              <Sobe aoTerminar={etapa === 'aviso' ? avisoMostrado : undefined}>
-                <Aviso texto={erro} />
-              </Sobe>
-            ) : null}
-
             <Botao
               titulo="Entrar"
               onPress={aoEntrar}
               carregando={etapa === 'enviando' || etapa === 'campos'}
               resultado={resultadoDoBotao}
-              aoMostrarResultado={botaoMostrado}
+              aoMostrarResultado={finalizar}
             />
 
             <Pressable onPress={esqueciASenha} hitSlop={12} accessibilityRole="button" style={estilos.link}>
