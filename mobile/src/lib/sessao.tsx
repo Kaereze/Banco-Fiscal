@@ -1,5 +1,13 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { supabase } from '@/lib/supabase';
 import type { Perfil } from '@/lib/types';
@@ -7,30 +15,21 @@ import type { Perfil } from '@/lib/types';
 type ContextoSessao = {
   sessao: Session | null;
   perfil: Perfil | null;
-  /** true enquanto ainda não sabemos se há sessão salva no aparelho. */
   carregando: boolean;
-  /**
-   * Já terminamos de procurar o perfil? Serve para separar "ainda buscando"
-   * de "esta conta não faz parte da família" — nos dois casos `perfil` é
-   * null, e sem essa distinção a tela ficaria carregando para sempre.
-   */
   perfilResolvido: boolean;
-  /**
-   * true logo depois de um login com senha, até a abertura terminar. Não
-   * liga quando a sessão vem salva do aparelho.
-   */
   aberturaPendente: boolean;
   concluirAbertura: () => void;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => Promise<void>;
 };
 
+type PerfilBuscado = { usuarioId: string; perfil: Perfil | null };
+
 const Contexto = createContext<ContextoSessao | null>(null);
 
 export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Session | null>(null);
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [perfilResolvido, setPerfilResolvido] = useState(false);
+  const [perfilBuscado, setPerfilBuscado] = useState<PerfilBuscado | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [aberturaPendente, setAberturaPendente] = useState(false);
 
@@ -46,30 +45,42 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     return () => inscricao.subscription.unsubscribe();
   }, []);
 
-  // O perfil diz que este usuário faz parte da família — é ele que as
-  // policies do banco consultam. Sem perfil, as tabelas voltam vazias.
+  const usuarioId = sessao?.user.id ?? null;
+
   useEffect(() => {
-    if (!sessao?.user) {
-      setPerfil(null);
-      setPerfilResolvido(false);
-      return;
-    }
+    if (!usuarioId) return;
     let cancelado = false;
-    setPerfilResolvido(false);
     supabase
       .from('profiles')
       .select('*')
-      .eq('id', sessao.user.id)
+      .eq('id', usuarioId)
       .maybeSingle()
       .then(({ data }) => {
-        if (cancelado) return;
-        setPerfil(data as Perfil | null);
-        setPerfilResolvido(true);
+        if (!cancelado) setPerfilBuscado({ usuarioId, perfil: data as Perfil | null });
       });
     return () => {
       cancelado = true;
     };
-  }, [sessao?.user?.id]);
+  }, [usuarioId]);
+
+  const perfilResolvido = usuarioId !== null && perfilBuscado?.usuarioId === usuarioId;
+  const perfil = perfilResolvido ? (perfilBuscado?.perfil ?? null) : null;
+
+  const concluirAbertura = useCallback(() => setAberturaPendente(false), []);
+
+  const entrar = useCallback(async (email: string, senha: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: senha,
+    });
+    if (error) throw new Error(traduzErroDeLogin(error.message));
+    setAberturaPendente(true);
+  }, []);
+
+  const sair = useCallback(async () => {
+    setAberturaPendente(false);
+    await supabase.auth.signOut();
+  }, []);
 
   const valor = useMemo<ContextoSessao>(
     () => ({
@@ -78,21 +89,11 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       carregando,
       perfilResolvido,
       aberturaPendente,
-      concluirAbertura: () => setAberturaPendente(false),
-      entrar: async (email, senha) => {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: senha,
-        });
-        if (error) throw new Error(traduzErroDeLogin(error.message));
-        setAberturaPendente(true);
-      },
-      sair: async () => {
-        setAberturaPendente(false);
-        await supabase.auth.signOut();
-      },
+      concluirAbertura,
+      entrar,
+      sair,
     }),
-    [sessao, perfil, carregando, perfilResolvido, aberturaPendente],
+    [sessao, perfil, carregando, perfilResolvido, aberturaPendente, concluirAbertura, entrar, sair],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

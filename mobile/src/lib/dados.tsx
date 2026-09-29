@@ -23,7 +23,6 @@ import type {
 type NovoLancamento = {
   data: string;
   descricao: string;
-  /** Sempre positivo aqui; o sinal é aplicado a partir de `tipo`. */
   valor: number;
   tipo: 'gasto' | 'receita';
   categoria_id: string | null;
@@ -36,7 +35,6 @@ type ContextoDados = {
   sincronizando: boolean;
   erro: string | null;
 
-  /** Mês em foco, no formato 'YYYY-MM-01'. */
   mes: string;
   irParaMes: (chave: string) => void;
 
@@ -45,8 +43,8 @@ type ContextoDados = {
   transacoes: Transacao[];
   orcamentos: Orcamento[];
   ultimaSync: Sincronizacao | null;
-  /** Total gasto no mês anterior, para a comparação da Home. */
   gastoMesAnterior: number | null;
+  historico: MesDoHistorico[];
 
   recarregar: () => Promise<void>;
   sincronizarPluggy: (completo?: boolean) => Promise<ResultadoSync>;
@@ -55,6 +53,78 @@ type ContextoDados = {
   apagarLancamento: (id: string) => Promise<void>;
   definirOrcamento: (categoriaId: string, limite: number) => Promise<void>;
 };
+
+export type MesDoHistorico = { mes: string; gastos: number; receitas: number };
+
+export const MESES_NO_HISTORICO = 6;
+
+type DadosDoMes = {
+  categorias: Categoria[];
+  contas: Conta[];
+  transacoes: Transacao[];
+  orcamentos: Orcamento[];
+  ultimaSync: Sincronizacao | null;
+  historico: MesDoHistorico[];
+};
+
+async function buscarDados(mes: string): Promise<DadosDoMes> {
+  const { inicio, fim } = limitesDoMes(mes);
+  const mesesDoHistorico = Array.from({ length: MESES_NO_HISTORICO }, (_, i) =>
+    deslocaMes(mes, i - (MESES_NO_HISTORICO - 1)),
+  );
+
+  const [resCategorias, resContas, resTransacoes, resOrcamentos, resSync, ...resHistorico] =
+    await Promise.all([
+      supabase.from('categorias').select('*').order('ordem'),
+      supabase.from('contas').select('*').eq('ativa', true).order('instituicao'),
+      supabase
+        .from('transacoes')
+        .select('*')
+        .gte('data', inicio)
+        .lte('data', fim)
+        .order('data', { ascending: false })
+        .order('criado_em', { ascending: false }),
+      supabase.from('orcamentos').select('*').eq('mes', mes),
+      supabase
+        .from('sincronizacoes')
+        .select('*')
+        .order('iniciada_em', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      ...mesesDoHistorico.map((chave) => {
+        const limites = limitesDoMes(chave);
+        return supabase
+          .from('transacoes')
+          .select('valor')
+          .gte('data', limites.inicio)
+          .lte('data', limites.fim)
+          .eq('ignorada', false);
+      }),
+    ]);
+
+  const falha = [resCategorias, resContas, resTransacoes, resOrcamentos].find((r) => r.error);
+  if (falha?.error) throw new Error(falha.error.message);
+
+  return {
+    categorias: (resCategorias.data ?? []) as Categoria[],
+    contas: (resContas.data ?? []) as Conta[],
+    transacoes: (resTransacoes.data ?? []) as Transacao[],
+    orcamentos: (resOrcamentos.data ?? []) as Orcamento[],
+    ultimaSync: (resSync.data ?? null) as Sincronizacao | null,
+    historico: resHistorico.some((r) => r.error)
+      ? []
+      : mesesDoHistorico.map((chave, i) => {
+          const valores = ((resHistorico[i].data ?? []) as { valor: number }[]).map((l) =>
+            Number(l.valor),
+          );
+          return {
+            mes: chave,
+            gastos: valores.reduce((soma, v) => (v < 0 ? soma - v : soma), 0),
+            receitas: valores.reduce((soma, v) => (v > 0 ? soma + v : soma), 0),
+          };
+        }),
+  };
+}
 
 const Contexto = createContext<ContextoDados | null>(null);
 
@@ -67,90 +137,59 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [ultimaSync, setUltimaSync] = useState<Sincronizacao | null>(null);
-  const [gastoMesAnterior, setGastoMesAnterior] = useState<number | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [historico, setHistorico] = useState<MesDoHistorico[]>([]);
+  const [buscando, setBuscando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  const aplicar = useCallback((dados: DadosDoMes) => {
+    setErro(null);
+    setCategorias(dados.categorias);
+    setContas(dados.contas);
+    setTransacoes(dados.transacoes);
+    setOrcamentos(dados.orcamentos);
+    setUltimaSync(dados.ultimaSync);
+    setHistorico(dados.historico);
+  }, []);
+
+  const falhar = useCallback((e: unknown) => {
+    setErro(e instanceof Error ? e.message : 'Não consegui carregar os dados.');
+  }, []);
+
   const recarregar = useCallback(async () => {
     if (!sessao) return;
-    setErro(null);
-    const { inicio, fim } = limitesDoMes(mes);
-    const anterior = limitesDoMes(deslocaMes(mes, -1));
-
     try {
-      const [
-        resCategorias,
-        resContas,
-        resTransacoes,
-        resOrcamentos,
-        resSync,
-        resAnterior,
-      ] = await Promise.all([
-        supabase.from('categorias').select('*').order('ordem'),
-        supabase.from('contas').select('*').eq('ativa', true).order('instituicao'),
-        supabase
-          .from('transacoes')
-          .select('*')
-          .gte('data', inicio)
-          .lte('data', fim)
-          .order('data', { ascending: false })
-          .order('criado_em', { ascending: false }),
-        supabase.from('orcamentos').select('*').eq('mes', mes),
-        supabase
-          .from('sincronizacoes')
-          .select('*')
-          .order('iniciada_em', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        // Só o necessário para somar: a Home compara com o mês passado,
-        // não mostra os lançamentos dele.
-        supabase
-          .from('transacoes')
-          .select('valor')
-          .gte('data', anterior.inicio)
-          .lte('data', anterior.fim)
-          .eq('ignorada', false)
-          .lt('valor', 0),
-      ]);
-
-      const falha = [resCategorias, resContas, resTransacoes, resOrcamentos].find((r) => r.error);
-      if (falha?.error) throw new Error(falha.error.message);
-
-      setCategorias((resCategorias.data ?? []) as Categoria[]);
-      setContas((resContas.data ?? []) as Conta[]);
-      setTransacoes((resTransacoes.data ?? []) as Transacao[]);
-      setOrcamentos((resOrcamentos.data ?? []) as Orcamento[]);
-      setUltimaSync((resSync.data ?? null) as Sincronizacao | null);
-
-      const linhasAnteriores = (resAnterior.data ?? []) as { valor: number }[];
-      setGastoMesAnterior(
-        resAnterior.error
-          ? null
-          : linhasAnteriores.reduce((soma, l) => soma - Number(l.valor), 0),
-      );
+      aplicar(await buscarDados(mes));
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não consegui carregar os dados.');
+      falhar(e);
     } finally {
-      setCarregando(false);
+      setBuscando(false);
     }
-  }, [sessao, mes]);
+  }, [sessao, mes, aplicar, falhar]);
 
-  // Só busca depois que o perfil existe: antes disso o RLS devolveria vazio
-  // e a tela mostraria "nenhum gasto" em vez do estado real.
   useEffect(() => {
-    if (!sessao) {
-      setCarregando(false);
-      return;
-    }
-    if (!perfil) {
-      // Sem perfil e a busca já terminou: esta conta não é da família.
-      // Parar de carregar deixa as telas mostrarem o aviso de Ajustes.
-      setCarregando(!perfilResolvido);
-      return;
-    }
-    void recarregar();
-  }, [sessao, perfil, perfilResolvido, recarregar]);
+    if (!sessao || !perfil) return;
+    let cancelado = false;
+    buscarDados(mes)
+      .then(
+        (dados) => {
+          if (!cancelado) aplicar(dados);
+        },
+        (e) => {
+          if (!cancelado) falhar(e);
+        },
+      )
+      .finally(() => {
+        if (!cancelado) setBuscando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [sessao, perfil, mes, aplicar, falhar]);
+
+  const carregando = !sessao ? false : !perfil ? !perfilResolvido : buscando;
+
+  const gastoMesAnterior = historico.length > 1 ? historico[historico.length - 2].gastos : null;
 
   const sincronizarPluggy = useCallback(
     async (completo = false): Promise<ResultadoSync> => {
@@ -176,7 +215,6 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
   );
 
   const editarTransacao = useCallback(async (id: string, mudancas: Partial<Transacao>) => {
-    // Otimista: a edição de categoria precisa parecer instantânea.
     setTransacoes((atuais) =>
       atuais.map((t) => (t.id === id ? { ...t, ...mudancas } : t)),
     );
@@ -235,7 +273,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
   );
 
   const irParaMes = useCallback((chave: string) => {
-    setCarregando(true);
+    setBuscando(true);
     setMes(chave);
   }, []);
 
@@ -252,6 +290,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
       orcamentos,
       ultimaSync,
       gastoMesAnterior,
+      historico,
       recarregar,
       sincronizarPluggy,
       editarTransacao,
@@ -271,6 +310,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
       orcamentos,
       ultimaSync,
       gastoMesAnterior,
+      historico,
       recarregar,
       sincronizarPluggy,
       editarTransacao,
@@ -289,10 +329,6 @@ export function useDados(): ContextoDados {
   return contexto;
 }
 
-// ------------------------------------------------------------
-// Derivações usadas pelas telas
-// ------------------------------------------------------------
-
 export type ResumoMes = {
   gastos: number;
   receitas: number;
@@ -306,7 +342,6 @@ export type ResumoMes = {
   semCategoria: number;
 };
 
-/** Transferências marcadas como ignoradas ficam de fora de tudo. */
 export function resumirMes(
   transacoes: Transacao[],
   categorias: Categoria[],

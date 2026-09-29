@@ -57,6 +57,14 @@ export function mesPorExtenso(chave: string): string {
   return `${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
+export function primeiraMaiuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+export function mesCurto(chave: string): string {
+  return MESES[dataDoBanco(chave).getMonth()].slice(0, 3);
+}
+
 /** Primeiro e último dia do mês, em 'YYYY-MM-DD'. */
 export function limitesDoMes(chave: string): { inicio: string; fim: string } {
   const d = dataDoBanco(chave);
