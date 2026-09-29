@@ -15,13 +15,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sobe } from '@/components/animacao';
 import { conteudoCentralizado } from '@/components/layout/Tela';
 import { Logo, NOME_DO_APP } from '@/components/marca/Logo';
-import { Aviso, Botao, Campo } from '@/components/ui';
+import { Aviso, Botao, Campo, type Resultado } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
-const ESPERA_MAXIMA_DA_CONFIRMACAO = 3000;
+const ESPERA_MAXIMA_POR_ETAPA = 3000;
 
-type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao';
+type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao' | 'aviso';
+
+const ETAPAS_ANIMADAS: Etapa[] = ['campos', 'botao', 'aviso'];
 
 export default function Login() {
   const { entrar, concluirLogin } = useSessao();
@@ -29,19 +31,40 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [etapa, setEtapa] = useState<Etapa>('formulario');
+  const [resultado, setResultado] = useState<Resultado | null>(null);
   const campoSenha = useRef<TextInput>(null);
 
-  const confirmando = etapa === 'campos' || etapa === 'botao';
-  const camposConfirmados = useCallback(() => setEtapa('botao'), []);
+  const finalizar = useCallback(() => {
+    if (resultado === 'sucesso') concluirLogin();
+    else setEtapa('formulario');
+  }, [resultado, concluirLogin]);
+
+  const camposMostrados = useCallback(() => setEtapa('botao'), []);
+  const botaoMostrado = useCallback(() => {
+    if (resultado === 'sucesso') concluirLogin();
+    else setEtapa('aviso');
+  }, [resultado, concluirLogin]);
+  const avisoMostrado = useCallback(() => setEtapa('formulario'), []);
 
   useEffect(() => {
-    if (!confirmando) return;
-    const limite = setTimeout(concluirLogin, ESPERA_MAXIMA_DA_CONFIRMACAO);
+    if (!ETAPAS_ANIMADAS.includes(etapa)) return;
+    const limite = setTimeout(finalizar, ESPERA_MAXIMA_POR_ETAPA);
     return () => clearTimeout(limite);
-  }, [confirmando, concluirLogin]);
+  }, [etapa, finalizar]);
+
+  function editar(atualizar: (valor: string) => void) {
+    return (valor: string) => {
+      atualizar(valor);
+      if (etapa === 'formulario' && resultado === 'erro') {
+        setResultado(null);
+        setErro(null);
+      }
+    };
+  }
 
   async function aoEntrar() {
     if (etapa !== 'formulario') return;
+    setResultado(null);
     if (!email.trim() || !senha) {
       setErro('Preencha o e-mail e a senha.');
       return;
@@ -50,13 +73,18 @@ export default function Login() {
     setErro(null);
     try {
       await entrar(email, senha);
-      Keyboard.dismiss();
-      setEtapa('campos');
+      setResultado('sucesso');
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui entrar.');
-      setEtapa('formulario');
+      setResultado('erro');
     }
+    Keyboard.dismiss();
+    setEtapa('campos');
   }
+
+  const resultadoDosCampos = etapa === 'enviando' || !resultado ? undefined : resultado;
+  const resultadoDoBotao = (etapa === 'botao' || etapa === 'aviso') && resultado ? resultado : undefined;
+  const mostrarAviso = erro !== null && (etapa === 'aviso' || etapa === 'formulario');
 
   function esqueciASenha() {
     Alert.alert(
@@ -85,7 +113,7 @@ export default function Login() {
             <Campo
               icone="mail-outline"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={editar(setEmail)}
               placeholder="E-mail"
               autoCapitalize="none"
               autoCorrect={false}
@@ -94,14 +122,14 @@ export default function Login() {
               autoComplete="email"
               returnKeyType="next"
               onSubmitEditing={() => campoSenha.current?.focus()}
-              confirmado={confirmando}
-              aoConfirmar={camposConfirmados}
+              resultado={resultadoDosCampos}
+              aoMostrarResultado={camposMostrados}
             />
             <Campo
               ref={campoSenha}
               icone="lock-closed-outline"
               value={senha}
-              onChangeText={setSenha}
+              onChangeText={editar(setSenha)}
               placeholder="Senha"
               secureTextEntry
               autoCapitalize="none"
@@ -109,17 +137,21 @@ export default function Login() {
               autoComplete="password"
               returnKeyType="go"
               onSubmitEditing={aoEntrar}
-              confirmado={confirmando}
+              resultado={resultadoDosCampos}
             />
 
-            {erro ? <Aviso texto={erro} /> : null}
+            {mostrarAviso && erro ? (
+              <Sobe aoTerminar={etapa === 'aviso' ? avisoMostrado : undefined}>
+                <Aviso texto={erro} />
+              </Sobe>
+            ) : null}
 
             <Botao
               titulo="Entrar"
               onPress={aoEntrar}
               carregando={etapa === 'enviando' || etapa === 'campos'}
-              confirmado={etapa === 'botao'}
-              aoConfirmar={concluirLogin}
+              resultado={resultadoDoBotao}
+              aoMostrarResultado={botaoMostrado}
             />
 
             <Pressable onPress={esqueciASenha} hitSlop={12} accessibilityRole="button" style={estilos.link}>
