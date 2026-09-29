@@ -15,6 +15,7 @@ export { aoTerminar } from './sequencia';
 export { DURACAO_TRANSICAO, useTransicao } from './transicao';
 
 const DURACAO = 420;
+const DURACAO_ESTOURO = 700;
 const ESCALONAMENTO = 55;
 const ATRASO_MAXIMO = 400;
 
@@ -26,9 +27,14 @@ type EntradaProps = ViewProps & {
 
 type Construtor = typeof FadeInDown | typeof FadeInUp | typeof FadeIn | typeof ZoomIn;
 
-function entrada(construtor: Construtor, indice: number, aoTerminar?: () => void): BaseAnimationBuilder {
+function entrada(
+  construtor: Construtor,
+  indice: number,
+  aoTerminar?: () => void,
+  duracao = DURACAO,
+): BaseAnimationBuilder {
   const animacao = construtor
-    .duration(DURACAO)
+    .duration(duracao)
     .delay(Math.min(indice * ESCALONAMENTO, ATRASO_MAXIMO));
   return aoTerminar ? animacao.withCallback(quandoTerminar(aoTerminar)) : animacao;
 }
@@ -59,7 +65,7 @@ export function Surge({ children, indice = 0, aoTerminar, ...resto }: EntradaPro
 
 export function Estoura({ children, indice = 0, aoTerminar, ...resto }: EntradaProps) {
   return (
-    <Animated.View entering={entrada(ZoomIn, indice, aoTerminar)} {...resto}>
+    <Animated.View entering={entrada(ZoomIn, indice, aoTerminar, DURACAO_ESTOURO)} {...resto}>
       {children}
     </Animated.View>
   );
