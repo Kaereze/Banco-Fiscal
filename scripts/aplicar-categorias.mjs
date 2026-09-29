@@ -186,11 +186,15 @@ async function aplicar() {
   // Apagamos e recriamos: o arquivo e a verdade, e manter regras orfas de
   // uma edicao anterior faria o banco divergir do que esta escrito.
   const regras = [];
+  for (const trecho of config.ignorar ?? []) {
+    const padrao = semAcento(trecho).trim();
+    if (padrao) regras.push({ padrao, categoria_id: null, prioridade: -10, ignorar: true });
+  }
   categorias.forEach((c, ordem) => {
     for (const trecho of c.quando ?? []) {
       const padrao = semAcento(trecho).trim();
       if (!padrao) continue;
-      regras.push({ padrao, categoria_id: id.get(c.nome) ?? null, prioridade: ordem * 10 });
+      regras.push({ padrao, categoria_id: id.get(c.nome) ?? null, prioridade: ordem * 10, ignorar: false });
     }
   });
 
@@ -202,7 +206,7 @@ async function aplicar() {
       await api('/regras', {
         method: 'POST',
         headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify(regras.filter((r) => r.categoria_id)),
+        body: JSON.stringify(regras.filter((r) => r.categoria_id || r.ignorar)),
       });
     }
   }

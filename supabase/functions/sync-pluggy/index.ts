@@ -308,7 +308,7 @@ function emLotes<T>(itens: T[], tamanho: number): T[][] {
 async function aplicarRegras(db: SupabaseClient): Promise<number> {
   const { data: regras } = await db
     .from('regras')
-    .select('padrao, categoria_id, pessoa, prioridade')
+    .select('padrao, categoria_id, pessoa, prioridade, ignorar')
     .order('prioridade', { ascending: true });
 
   if (!regras || regras.length === 0) return 0;
@@ -331,7 +331,7 @@ async function aplicarRegras(db: SupabaseClient): Promise<number> {
     const regra = regras.find((r) => alvo.includes(semAcento(r.padrao)));
     if (!regra) continue;
 
-    const chave = `${regra.categoria_id}|${regra.pessoa ?? ''}`;
+    const chave = `${regra.ignorar}|${regra.categoria_id}|${regra.pessoa ?? ''}`;
     const grupo = porRegra.get(chave) ?? { regra, ids: [] };
     grupo.ids.push(transacao.id);
     porRegra.set(chave, grupo);
@@ -343,10 +343,11 @@ async function aplicarRegras(db: SupabaseClient): Promise<number> {
     for (const lote of emLotes(ids, 100)) {
       const { error } = await db
         .from('transacoes')
-        .update({
-          categoria_id: regra.categoria_id,
-          ...(regra.pessoa ? { pessoa: regra.pessoa } : {}),
-        })
+        .update(
+          regra.ignorar
+            ? { ignorada: true }
+            : { categoria_id: regra.categoria_id, ...(regra.pessoa ? { pessoa: regra.pessoa } : {}) },
+        )
         .in('id', lote);
       if (error) {
         console.warn('Nao consegui aplicar uma regra:', error.message);
