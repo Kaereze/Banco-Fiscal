@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { chaveDeEntrada, Desce, Sobe } from '@/components/animacao';
 import { BarraCategoria } from '@/components/financas/BarraCategoria';
@@ -10,8 +10,9 @@ import { GraficoMeses } from '@/components/financas/GraficoMeses';
 import { ListaTransacoes } from '@/components/financas/ListaTransacoes';
 import { SeletorMes } from '@/components/financas/SeletorMes';
 import { TelaAba } from '@/components/layout/Tela';
-import { Aviso, Botao, CabecalhoTela, Carregando, Cartao, Secao, Titulo, Vazio } from '@/components/ui';
+import { Aviso, Botao, CabecalhoTela, Carregando, Cartao, ItemMenu, Secao, Titulo, Vazio } from '@/components/ui';
 import { MESES_NO_HISTORICO, resumirMes, useDados } from '@/lib/dados';
+import { moeda } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco } from '@/lib/theme';
 
@@ -80,15 +81,6 @@ export default function Relatorios() {
         </Sobe>
       ) : null}
 
-      {semCategoria > 0 ? (
-        <Pressable onPress={() => router.push('/transacoes')} accessibilityRole="button">
-          <Aviso
-            tipo="alerta"
-            texto={`${semCategoria} ${semCategoria === 1 ? 'gasto ainda está' : 'gastos ainda estão'} sem categoria. Toque para organizar.`}
-          />
-        </Pressable>
-      ) : null}
-
       <Sobe key={`categorias-${chave}`} indice={4}>
         <Secao>
           <Titulo>Gastos por categoria</Titulo>
@@ -109,6 +101,16 @@ export default function Relatorios() {
               <Cartao>
                 <GraficoCategorias porCategoria={resumo.porCategoria} total={resumo.gastos} />
               </Cartao>
+              <ItemMenu
+                icone="pricetags-outline"
+                titulo="Classificar pagamentos"
+                apoio={
+                  semCategoria > 0
+                    ? `${semCategoria} sem categoria · ${moeda(resumo.semCategoria)}`
+                    : 'Todos os gastos do mês já têm categoria'
+                }
+                onPress={() => router.push('/classificar')}
+              />
               <Cartao style={estilos.barras}>
                 {resumo.porCategoria.map((fatia) => (
                   <BarraCategoria

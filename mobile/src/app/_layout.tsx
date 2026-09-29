@@ -49,6 +49,7 @@ function Navegacao() {
             <Stack.Screen name="lancamento" options={{ title: 'Novo lançamento', presentation: 'modal' }} />
             <Stack.Screen name="orcamento" options={{ title: 'Orçamento do mês' }} />
             <Stack.Screen name="sobre" options={{ title: 'Como os dados chegam' }} />
+            <Stack.Screen name="classificar" options={{ title: 'Classificar pagamentos' }} />
           </Stack.Protected>
 
           <Stack.Protected guard={!logado}>

@@ -117,7 +117,7 @@ export default function Inicio() {
       </Sobe>
 
       {semCategoria > 0 ? (
-        <Pressable onPress={() => router.push('/transacoes')} accessibilityRole="button">
+        <Pressable onPress={() => router.push('/classificar')} accessibilityRole="button">
           <Aviso
             tipo="alerta"
             texto={`${semCategoria} ${semCategoria === 1 ? 'gasto está' : 'gastos estão'} sem categoria. Toque para organizar.`}
