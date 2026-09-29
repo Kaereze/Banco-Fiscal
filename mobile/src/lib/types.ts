@@ -46,6 +46,10 @@ export type Transacao = {
   origem: 'pluggy' | 'manual';
   metodo: string | null;
   estabelecimento: string | null;
+  contraparte: string | null;
+  cnpj: string | null;
+  atividade: string | null;
+  mensagem: string | null;
   observacao: string | null;
   ignorada: boolean;
   criado_por: string | null;

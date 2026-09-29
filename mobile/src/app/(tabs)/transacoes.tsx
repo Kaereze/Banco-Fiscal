@@ -32,7 +32,7 @@ export default function Movimentacoes() {
         return false;
       }
       if (!termo) return true;
-      return [t.descricao, t.estabelecimento, t.pessoa].some((campo) =>
+      return [t.descricao, t.estabelecimento, t.contraparte, t.pessoa].some((campo) =>
         (campo ?? '').toLowerCase().includes(termo),
       );
     });

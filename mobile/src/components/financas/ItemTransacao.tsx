@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { dataCurta, moeda } from '@/lib/format';
+import { nomeDoPagamento } from '@/lib/transacoes';
 import { cores, espaco, fonte, raio, sombra } from '@/lib/theme';
 import type { Categoria, Transacao } from '@/lib/types';
 
@@ -20,7 +21,7 @@ export function ItemTransacao({
     <Pressable
       onPress={() => router.push({ pathname: '/transacao/[id]', params: { id: transacao.id } })}
       accessibilityRole="button"
-      accessibilityLabel={`${transacao.descricao}, ${saida ? 'saída' : 'entrada'} de ${moeda(transacao.valor)}`}
+      accessibilityLabel={`${nomeDoPagamento(transacao)},${saida ? 'saída' : 'entrada'} de ${moeda(transacao.valor)}`}
       style={({ pressed }) => [estilos.cartao, pressed && estilos.pressionado]}
     >
       <View
@@ -34,7 +35,7 @@ export function ItemTransacao({
 
       <View style={estilos.meio}>
         <Text style={[estilos.descricao, apagada && estilos.riscado]} numberOfLines={1}>
-          {transacao.descricao}
+          {nomeDoPagamento(transacao)}
         </Text>
         <Text style={estilos.detalhe} numberOfLines={1}>
           {[

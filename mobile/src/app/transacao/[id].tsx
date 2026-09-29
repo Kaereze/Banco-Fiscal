@@ -19,8 +19,10 @@ import {
   Vazio,
 } from '@/components/ui';
 import { useDados } from '@/lib/dados';
+import { lerCategoriaDoBanco } from '@/lib/categoriasDoBanco';
 import { dataLonga, moeda } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
+import { formatarCnpj, nomeDoPagamento } from '@/lib/transacoes';
 import { cores, espaco, fonte } from '@/lib/theme';
 import type { Categoria, Conta, Transacao } from '@/lib/types';
 
@@ -64,7 +66,9 @@ function Editor({ transacao }: { transacao: Transacao }) {
   const conta = contas.find((c) => c.id === transacao.conta_id);
   const categoria = categorias.find((c) => c.id === categoriaId) ?? null;
   const relevantes = categorias.filter((c) => (saida ? c.tipo === 'gasto' : c.tipo === 'receita'));
-  const padraoDaRegra = chaveDaRegra(transacao.estabelecimento ?? transacao.descricao);
+  const nome = nomeDoPagamento(transacao);
+  const leitura = lerCategoriaDoBanco(transacao.categoria_pluggy);
+  const padraoDaRegra = chaveDaRegra(nome);
 
   async function salvar() {
     setSalvando(true);
@@ -124,7 +128,7 @@ function Editor({ transacao }: { transacao: Transacao }) {
     <TelaFormulario>
       <View style={estilos.topo}>
         <Text style={estilos.descricao} numberOfLines={2}>
-          {transacao.descricao}
+          {nome}
         </Text>
         <Text style={[estilos.valor, { color: saida ? cores.verdeEscuro : cores.entrada }]}>
           {saida ? '−' : '+'} {moeda(transacao.valor)}
@@ -139,10 +143,28 @@ function Editor({ transacao }: { transacao: Transacao }) {
         <Linha rotulo="Forma" valor={transacao.metodo ?? '—'} />
         <Separador />
         <Linha rotulo="Categoria" valor={categoria ? `${categoria.emoji} ${categoria.nome}` : 'Sem categoria'} />
-        {transacao.categoria_pluggy ? (
+        {transacao.descricao !== nome ? (
           <>
             <Separador />
-            <Linha rotulo="O banco classificou como" valor={transacao.categoria_pluggy} />
+            <Linha rotulo="No extrato" valor={transacao.descricao} />
+          </>
+        ) : null}
+        {transacao.cnpj ? (
+          <>
+            <Separador />
+            <Linha rotulo="CNPJ" valor={formatarCnpj(transacao.cnpj)} />
+          </>
+        ) : null}
+        {transacao.mensagem ? (
+          <>
+            <Separador />
+            <Linha rotulo="Mensagem" valor={transacao.mensagem} />
+          </>
+        ) : null}
+        {leitura ? (
+          <>
+            <Separador />
+            <Linha rotulo="O banco diz" valor={leitura.descricao} />
           </>
         ) : null}
       </Cartao>
@@ -216,7 +238,7 @@ function comprovante(transacao: Transacao, conta: Conta | undefined, categoria: 
   const saida = transacao.valor < 0;
   return [
     `${NOME_DO_APP} — comprovante`,
-    transacao.descricao,
+    nomeDoPagamento(transacao),
     `${saida ? 'Saída' : 'Entrada'}: ${moeda(transacao.valor)}`,
     `Data: ${dataLonga(transacao.data)}`,
     conta ? `Conta: ${conta.nome}` : null,

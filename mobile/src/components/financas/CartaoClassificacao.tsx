@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Campo, Cartao, GradePilulas, Pilula, Rotulo } from '@/components/ui';
 import { lerCategoriaDoBanco } from '@/lib/categoriasDoBanco';
 import { diaRelativo, moeda } from '@/lib/format';
+import { formatarCnpj, nomeDoPagamento } from '@/lib/transacoes';
 import { cores, espaco, fonte, raio } from '@/lib/theme';
 import type { Categoria, Transacao } from '@/lib/types';
 
@@ -26,10 +27,13 @@ export function CartaoClassificacao({
   const [anotacao, setAnotacao] = useState(transacao.observacao ?? '');
   const leitura = lerCategoriaDoBanco(transacao.categoria_pluggy);
   const sugerida = leitura?.sugestao ? categorias.find((c) => c.nome === leitura.sugestao) : undefined;
-  const nome = transacao.estabelecimento ?? transacao.descricao;
-  const detalhes = [transacao.metodo, nomeDaConta, transacao.origem === 'manual' ? 'lançado à mão' : null].filter(
-    Boolean,
-  );
+  const nome = nomeDoPagamento(transacao);
+  const detalhes = [
+    transacao.descricao !== nome ? transacao.descricao : null,
+    transacao.metodo,
+    nomeDaConta,
+    transacao.origem === 'manual' ? 'lançado à mão' : null,
+  ].filter(Boolean);
 
   function salvarAnotacao() {
     const texto = anotacao.trim();
@@ -49,9 +53,8 @@ export function CartaoClassificacao({
       </View>
 
       {detalhes.length > 0 ? <Text style={estilos.detalhe}>{detalhes.join(' · ')}</Text> : null}
-      {transacao.descricao_original && transacao.descricao_original !== nome ? (
-        <Text style={estilos.detalhe}>{transacao.descricao_original}</Text>
-      ) : null}
+      {transacao.cnpj ? <Text style={estilos.detalhe}>CNPJ {formatarCnpj(transacao.cnpj)}</Text> : null}
+      {transacao.mensagem ? <Text style={estilos.mensagem}>“{transacao.mensagem}”</Text> : null}
 
       {leitura ? (
         <View style={estilos.banco}>
@@ -111,6 +114,7 @@ const estilos = StyleSheet.create({
   nome: { fontSize: fonte.corpo, fontWeight: '700', color: cores.texto },
   valor: { fontSize: fonte.secao, fontWeight: '800', color: cores.verdeEscuro, fontVariant: ['tabular-nums'] },
   detalhe: { fontSize: fonte.mini, color: cores.textoSuave },
+  mensagem: { fontSize: fonte.apoio, color: cores.texto, fontStyle: 'italic' },
   banco: {
     flexDirection: 'row',
     alignItems: 'center',
