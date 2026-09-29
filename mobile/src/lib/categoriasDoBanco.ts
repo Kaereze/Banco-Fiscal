@@ -1,11 +1,7 @@
-type Leitura = { descricao: string; sugestao: string | null; transferenciaPropria?: boolean };
+type Leitura = { descricao: string; sugestao: string | null };
 
 const LEITURAS: Record<string, Leitura> = {
-  'Same person transfer': {
-    descricao: 'Transferência para uma conta sua',
-    sugestao: null,
-    transferenciaPropria: true,
-  },
+  'Same person transfer': { descricao: 'Transferência para uma conta sua', sugestao: null },
   'Transfer - PIX': { descricao: 'Transferência por PIX', sugestao: null },
   'Transfer - Bank Slip': { descricao: 'Pagamento de boleto', sugestao: null },
   Transfers: { descricao: 'Transferência', sugestao: null },

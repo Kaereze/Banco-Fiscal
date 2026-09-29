@@ -94,7 +94,7 @@ export function CartaoClassificacao({
           />
         ))}
         <Pilula
-          texto={leitura?.transferenciaPropria ? '↔ Não contar (é minha)' : '↔ Não contar'}
+          texto="↔ Não contar"
           ativa={false}
           onPress={aoNaoContar}
         />
