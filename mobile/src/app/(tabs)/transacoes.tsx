@@ -1,10 +1,11 @@
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { ItemTransacao } from '@/components/financas/ItemTransacao';
 import { SeletorMes } from '@/components/financas/SeletorMes';
 import { useAtualizacao, useConteudoDeAba } from '@/components/layout/Tela';
-import { CabecalhoTela, Campo, Carregando, Pilula, Vazio } from '@/components/ui';
+import { BotaoIcone, CabecalhoTela, Campo, Carregando, Pilula, Vazio } from '@/components/ui';
 import { useDados } from '@/lib/dados';
 import { diaRelativo, moeda } from '@/lib/format';
 import { cores, espaco, fonte, MARGEM } from '@/lib/theme';
@@ -15,6 +16,7 @@ const SEM_CATEGORIA = 'sem-categoria';
 const ENTRADAS = 'entradas';
 
 export default function Movimentacoes() {
+  const router = useRouter();
   const { transacoes, categorias, carregando, recarregar } = useDados();
   const conteudo = useConteudoDeAba();
   const { atualizando, atualizar } = useAtualizacao(recarregar);
@@ -69,7 +71,12 @@ export default function Movimentacoes() {
       ItemSeparatorComponent={Espaco}
       ListHeaderComponent={
         <View style={estilos.cabecalho}>
-          <CabecalhoTela titulo="Movimentações" />
+          <CabecalhoTela
+            titulo="Movimentações"
+            direita={
+              <BotaoIcone icone="add" rotulo="Lançar gasto em dinheiro" onPress={() => router.push('/lancamento')} />
+            }
+          />
           <SeletorMes />
           <Campo
             icone="search"

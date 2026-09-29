@@ -10,7 +10,7 @@ import { GraficoMeses } from '@/components/financas/GraficoMeses';
 import { ListaTransacoes } from '@/components/financas/ListaTransacoes';
 import { SeletorMes } from '@/components/financas/SeletorMes';
 import { TelaAba } from '@/components/layout/Tela';
-import { Aviso, Botao, CabecalhoTela, Carregando, Cartao, ItemMenu, Secao, Titulo, Vazio } from '@/components/ui';
+import { Aviso, CabecalhoTela, Carregando, Cartao, ItemMenu, Secao, Titulo, Vazio } from '@/components/ui';
 import { MESES_NO_HISTORICO, resumirMes, useDados } from '@/lib/dados';
 import { moeda } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
@@ -135,8 +135,6 @@ export default function Relatorios() {
           </Secao>
         </Sobe>
       ) : null}
-
-      <Botao titulo="Lançar gasto em dinheiro" icone="add" onPress={() => router.push('/lancamento')} />
     </TelaAba>
   );
 }

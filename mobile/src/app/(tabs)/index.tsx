@@ -4,14 +4,13 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { chaveDeEntrada, Desce, Sobe } from '@/components/animacao';
-import { useBuscaNoBanco } from '@/components/carregamento/useBuscaNoBanco';
 import { BarraCategoria } from '@/components/financas/BarraCategoria';
 import { CartaoMetrica, LinhaMetricas } from '@/components/financas/CartaoMetrica';
 import { CartaoSaldo, LinhaSaldo } from '@/components/financas/CartaoSaldo';
 import { ListaTransacoes } from '@/components/financas/ListaTransacoes';
 import { TelaAba } from '@/components/layout/Tela';
 import { Marca } from '@/components/marca/Logo';
-import { Aviso, Botao, BotaoIcone, Cartao, Secao, Titulo, Vazio } from '@/components/ui';
+import { Aviso, BotaoIcone, Cartao, Secao, Titulo, Vazio } from '@/components/ui';
 import { resumirMes, useDados } from '@/lib/dados';
 import { mesPorExtenso, moeda, tempoDesde } from '@/lib/format';
 import { useSessao } from '@/lib/sessao';
@@ -22,11 +21,9 @@ const ULTIMOS_LANCAMENTOS = 5;
 
 export default function Inicio() {
   const router = useRouter();
-  const buscarNoBanco = useBuscaNoBanco();
   const { perfil, perfilResolvido } = useSessao();
   const {
     carregando,
-    sincronizando,
     erro,
     mes,
     categorias,
@@ -101,21 +98,6 @@ export default function Inicio() {
         </Secao>
       </Sobe>
 
-      <Sobe indice={4} style={estilos.atalhos}>
-        <View style={estilos.atalho}>
-          <Botao titulo="Lançar gasto" icone="add" onPress={() => router.push('/lancamento')} />
-        </View>
-        <View style={estilos.atalho}>
-          <Botao
-            titulo="Buscar"
-            icone="sync"
-            variante="secundario"
-            carregando={sincronizando}
-            onPress={() => void buscarNoBanco()}
-          />
-        </View>
-      </Sobe>
-
       {semCategoria > 0 ? (
         <Pressable onPress={() => router.push('/classificar')} accessibilityRole="button">
           <Aviso
@@ -126,7 +108,7 @@ export default function Inicio() {
       ) : null}
 
       {resumo.porCategoria.length > 0 ? (
-        <Sobe key={`cats-${chave}`} indice={5}>
+        <Sobe key={`cats-${chave}`} indice={4}>
           <Secao>
             <Titulo acao={{ texto: 'ver tudo', onPress: () => router.push('/relatorios') }}>
               Onde mais gastou
@@ -147,7 +129,7 @@ export default function Inicio() {
       ) : null}
 
       {ultimas.length > 0 ? (
-        <Sobe key={`ult-${chave}`} indice={6}>
+        <Sobe key={`ult-${chave}`} indice={5}>
           <Secao>
             <Titulo acao={{ texto: 'ver tudo', onPress: () => router.push('/transacoes') }}>
               Últimos lançamentos
@@ -162,7 +144,7 @@ export default function Inicio() {
           <Vazio
             icone="leaf-outline"
             titulo="Nada neste mês ainda"
-            texto='Toque em "Buscar" para trazer seus lançamentos do banco.'
+            texto="Busque os lançamentos do banco em Contas."
           />
         </Cartao>
       ) : null}
@@ -211,7 +193,5 @@ const estilos = StyleSheet.create({
   comparacao: { flexDirection: 'row', alignItems: 'center', gap: espaco.sm },
   comparacaoTexto: { flex: 1, fontSize: fonte.mini, color: cores.textoSuave },
   comparacaoValor: { fontWeight: '700' },
-  atalhos: { flexDirection: 'row', gap: espaco.sm },
-  atalho: { flex: 1 },
   categorias: { gap: espaco.lg },
 });
