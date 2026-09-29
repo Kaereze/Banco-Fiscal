@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
+import { Path } from 'react-native-svg';
 
-import { LADO, MOEDA, MoedaSvg, NOME_DO_APP, ORIGEM, PECAS, SvgLogo } from '@/components/marca/Logo';
-import { aoTerminar } from '@/components/animacao/sequencia';
+import { aoTerminar, useTransicao } from '@/components/animacao';
+import { FORMAS, type Forma } from '@/components/marca/geometria';
+import { MoedaSvg, NOME_DO_APP, PALETAS, posicaoDaMoeda, SvgLogo, tinta } from '@/components/marca/Logo';
 import { cores, ouro } from '@/lib/theme';
 
 const PALETA = 'ouro';
@@ -23,20 +27,21 @@ const QUIQUE = [
 const DURACAO_QUEDA = QUEDA + QUIQUE.reduce((soma, q) => soma + q.duracao * 2, 0);
 const DURACAO_ONDA = 600;
 const DURACAO_ENCOLHER = 320;
-const DURACAO_PECA = 260;
+const VELOCIDADE_DO_TRACO = 0.7;
+const ESPESSURA_DO_TRACO = 1.6;
 const ESCALA_QUEDA = 1.7;
 const ALTURA_QUEDA = 1.4;
 
 const ETAPA_QUEDA = -2;
 const ETAPA_ENCOLHER = -1;
-const ETAPA_PRONTA = PECAS.length;
+const ETAPA_PREENCHER = FORMAS.length;
+const ETAPA_PRONTA = FORMAS.length + 1;
+
+const PathAnimado = Animated.createAnimatedComponent(Path);
 
 export function LogoMoeda({ tamanho = 180, aoConcluir }: { tamanho?: number; aoConcluir?: () => void }) {
-  const k = tamanho / LADO;
-  const raio = MOEDA.r * k;
-  const centroX = (MOEDA.cx - ORIGEM) * k;
-  const centroY = (MOEDA.cy - ORIGEM) * k;
-  const chao = centroY + raio * ESCALA_QUEDA;
+  const moeda = posicaoDaMoeda(tamanho);
+  const chao = moeda.centroY + moeda.raio * ESCALA_QUEDA;
 
   const [etapa, setEtapa] = useState(ETAPA_QUEDA);
   const avancar = useCallback(() => setEtapa((atual) => atual + 1), []);
@@ -50,6 +55,7 @@ export function LogoMoeda({ tamanho = 180, aoConcluir }: { tamanho?: number; aoC
   const giro = useSharedValue(0);
   const escala = useSharedValue(ESCALA_QUEDA);
   const impacto = useSharedValue(0);
+  const preenchimento = useTransicao(etapa >= ETAPA_PREENCHER, avancar);
 
   useEffect(() => {
     const iniciarOnda = () => {
@@ -68,10 +74,7 @@ export function LogoMoeda({ tamanho = 180, aoConcluir }: { tamanho?: number; aoC
         cai(q.duracao, i === ultimo ? () => setEtapa(ETAPA_ENCOLHER) : undefined),
       ]),
     );
-    giro.value = withTiming(Math.PI * 6, {
-      duration: DURACAO_QUEDA,
-      easing: Easing.out(Easing.cubic),
-    });
+    giro.value = withTiming(Math.PI * 6, { duration: DURACAO_QUEDA, easing: Easing.out(Easing.cubic) });
   }, [altura, giro, impacto, tamanho]);
 
   useEffect(() => {
@@ -109,20 +112,16 @@ export function LogoMoeda({ tamanho = 180, aoConcluir }: { tamanho?: number; aoC
   }));
 
   return (
-    <View
-      style={{ width: tamanho, height: tamanho }}
-      accessibilityRole="image"
-      accessibilityLabel={NOME_DO_APP}
-    >
+    <View style={{ width: tamanho, height: tamanho }} accessibilityRole="image" accessibilityLabel={NOME_DO_APP}>
       <Animated.View
         style={[
           estilos.sombra,
           {
-            left: centroX - raio * 1.3,
-            top: chao - raio * 0.2,
-            width: raio * 2.6,
-            height: raio * 0.4,
-            borderRadius: raio,
+            left: moeda.centroX - moeda.raio * 1.3,
+            top: chao - moeda.raio * 0.2,
+            width: moeda.raio * 2.6,
+            height: moeda.raio * 0.4,
+            borderRadius: moeda.raio,
           },
           estiloSombra,
         ]}
@@ -130,78 +129,83 @@ export function LogoMoeda({ tamanho = 180, aoConcluir }: { tamanho?: number; aoC
       <Animated.View
         style={[
           estilos.onda,
-          { left: centroX - raio, top: chao - raio, width: raio * 2, height: raio * 2, borderRadius: raio },
+          {
+            left: moeda.left,
+            top: chao - moeda.raio,
+            width: moeda.width,
+            height: moeda.height,
+            borderRadius: moeda.raio,
+          },
           estiloOnda,
         ]}
       />
 
-      {PECAS.map((peca, i) => (
-        <PecaAnimada
-          key={peca.chave}
-          ativa={etapa === i}
-          tamanho={tamanho}
-          deslocamentoX={centroX - tamanho / 2}
-          deslocamentoY={centroY - tamanho / 2}
-          aoTerminar={avancar}
-        >
-          {peca.desenhar(PALETA)}
-        </PecaAnimada>
-      ))}
+      <View style={StyleSheet.absoluteFill}>
+        <SvgLogo tamanho={tamanho} paleta={PALETA}>
+          {FORMAS.map((forma, i) => (
+            <Traco
+              key={forma.chave}
+              forma={forma}
+              desenhando={etapa === i}
+              preenchimento={preenchimento}
+              aoTerminar={avancar}
+            />
+          ))}
+        </SvgLogo>
+      </View>
 
       <Animated.View
         style={[
           estilos.absoluto,
-          { left: centroX - raio, top: centroY - raio, width: raio * 2, height: raio * 2 },
+          { left: moeda.left, top: moeda.top, width: moeda.width, height: moeda.height },
           estiloMoeda,
         ]}
       >
-        <MoedaSvg tamanho={raio * 2} paleta={PALETA} />
+        <MoedaSvg tamanho={moeda.width} paleta={PALETA} />
       </Animated.View>
     </View>
   );
 }
 
-function PecaAnimada({
-  ativa,
-  tamanho,
-  deslocamentoX,
-  deslocamentoY,
+function Traco({
+  forma,
+  desenhando,
+  preenchimento,
   aoTerminar: fim,
-  children,
 }: {
-  ativa: boolean;
-  tamanho: number;
-  deslocamentoX: number;
-  deslocamentoY: number;
+  forma: Forma;
+  desenhando: boolean;
+  preenchimento: SharedValue<number>;
   aoTerminar: () => void;
-  children: ReactNode;
 }) {
-  const p = useSharedValue(0);
+  const desenhado = useSharedValue(0);
 
   useEffect(() => {
-    if (!ativa) return;
-    p.value = withTiming(
+    if (!desenhando) return;
+    desenhado.value = withTiming(
       1,
-      { duration: DURACAO_PECA, easing: Easing.out(Easing.back(1.6)) },
+      { duration: forma.comprimento / VELOCIDADE_DO_TRACO, easing: Easing.linear },
       aoTerminar(fim),
     );
-  }, [ativa, p, fim]);
+  }, [desenhando, desenhado, forma.comprimento, fim]);
 
-  const estilo = useAnimatedStyle(() => ({
-    opacity: interpolate(p.value, [0, 0.25], [0, 1], 'clamp'),
-    transform: [
-      { translateX: deslocamentoX * (1 - p.value) },
-      { translateY: deslocamentoY * (1 - p.value) },
-      { scale: interpolate(p.value, [0, 1], [0.15, 1]) },
-    ],
+  const propsAnimadas = useAnimatedProps(() => ({
+    strokeDashoffset: forma.comprimento * (1 - desenhado.value),
+    strokeOpacity: desenhado.value > 0 ? 1 : 0,
+    fillOpacity: preenchimento.value,
   }));
 
   return (
-    <Animated.View style={[estilos.absoluto, { width: tamanho, height: tamanho }, estilo]}>
-      <SvgLogo tamanho={tamanho} paleta={PALETA}>
-        {children}
-      </SvgLogo>
-    </Animated.View>
+    <PathAnimado
+      d={forma.caminho}
+      fill={tinta(PALETA, forma.tinta)}
+      stroke={PALETAS[PALETA].traco}
+      strokeWidth={ESPESSURA_DO_TRACO}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray={[forma.comprimento, forma.comprimento]}
+      animatedProps={propsAnimadas}
+    />
   );
 }
 

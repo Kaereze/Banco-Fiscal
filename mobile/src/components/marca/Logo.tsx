@@ -1,13 +1,11 @@
-import { Fragment, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Polygon, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 
+import { FORMAS, LADO, MOEDA, ORIGEM, VIEWBOX, type Tinta } from '@/components/marca/geometria';
 import { cores, fonte, ouro } from '@/lib/theme';
 
-export const VIEWBOX = '21.5 21.5 150 150';
-export const ORIGEM = 21.5;
-export const LADO = 150;
-export const MOEDA = { cx: 106, cy: 97.5, r: 29.5 } as const;
+export const NOME_DO_APP = 'K Financeiro';
 
 export type NomePaleta = 'verde' | 'ouro';
 
@@ -16,6 +14,7 @@ type Paleta = {
   kTopo: string;
   kBase: string;
   espessura: string;
+  traco: string;
   aroClaro: string;
   aroMeio: string;
   aroEscuro: string;
@@ -31,19 +30,21 @@ export const PALETAS: Record<NomePaleta, Paleta> = {
     kTopo: '#7ad693',
     kBase: '#39a96b',
     espessura: '#1f7a4c',
+    traco: cores.verdeEscuro,
     aroClaro: '#d6f5df',
     aroMeio: '#8fdaa6',
     aroEscuro: '#4fb97a',
     mioloTopo: '#2f9a5f',
     mioloBase: '#1f7a4c',
     cifrao: '#c8f3d4',
-    contornoCifrao: '#174a3a',
+    contornoCifrao: cores.verdeEscuro,
   },
   ouro: {
     apoio: ouro.medio,
     kTopo: ouro.claro,
     kBase: ouro.base,
     espessura: ouro.escuro,
+    traco: ouro.escuro,
     aroClaro: ouro.brilho,
     aroMeio: ouro.claro,
     aroEscuro: ouro.base,
@@ -54,54 +55,10 @@ export const PALETAS: Record<NomePaleta, Paleta> = {
   },
 };
 
-const idK = (p: NomePaleta) => `k-${p}`;
-
-export type Peca = { chave: string; desenhar: (p: NomePaleta) => ReactNode };
-
-export const PECAS: Peca[] = [
-  {
-    chave: 'espessura',
-    desenhar: (p) => (
-      <Circle cx={MOEDA.cx + 1.8} cy={MOEDA.cy - 1.6} r={MOEDA.r} fill={PALETAS[p].espessura} />
-    ),
-  },
-  {
-    chave: 'haste',
-    desenhar: (p) => (
-      <Rect x={60.5} y={45.5} width={22} height={102} rx={1.2} fill={`url(#${idK(p)})`} />
-    ),
-  },
-  {
-    chave: 'bracos',
-    desenhar: (p) => (
-      <>
-        <Polygon points="82.5,79 128.5,45.5 154,45.5 82.5,97.5" fill={`url(#${idK(p)})`} />
-        <Polygon points="82.5,114 128,147.5 156.5,147.5 82.5,95.5" fill={`url(#${idK(p)})`} />
-      </>
-    ),
-  },
-  {
-    chave: 'triangulos',
-    desenhar: (p) => (
-      <>
-        <Polygon points="95.5,45.5 110,45.5 95.5,59" fill={PALETAS[p].apoio} />
-        <Polygon points="95.5,133 110,147.5 95.5,147.5" fill={PALETAS[p].apoio} />
-      </>
-    ),
-  },
-  {
-    chave: 'direita',
-    desenhar: (p) => (
-      <Polygon points="155.5,66 163,66 163,127 155.5,127 132,96.5" fill={PALETAS[p].apoio} />
-    ),
-  },
-  {
-    chave: 'esquerda',
-    desenhar: (p) => (
-      <Rect x={30.5} y={65.8} width={17.2} height={61.2} rx={1.2} fill={PALETAS[p].apoio} />
-    ),
-  },
-];
+export function tinta(paleta: NomePaleta, qual: Tinta): string {
+  if (qual === 'k') return `url(#k-${paleta})`;
+  return PALETAS[paleta][qual];
+}
 
 export function SvgLogo({
   tamanho,
@@ -116,7 +73,7 @@ export function SvgLogo({
   return (
     <Svg width={tamanho} height={tamanho} viewBox={VIEWBOX}>
       <Defs>
-        <LinearGradient id={idK(paleta)} x1="0" y1="0" x2="0" y2="1">
+        <LinearGradient id={`k-${paleta}`} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={p.kTopo} />
           <Stop offset="1" stopColor={p.kBase} />
         </LinearGradient>
@@ -160,30 +117,25 @@ export function MoedaSvg({ tamanho, paleta }: { tamanho: number; paleta: NomePal
   );
 }
 
-export function Logo({ tamanho = 88, paleta = 'verde' }: { tamanho?: number; paleta?: NomePaleta }) {
+export function posicaoDaMoeda(tamanho: number) {
   const k = tamanho / LADO;
   const raio = MOEDA.r * k;
+  const centroX = (MOEDA.cx - ORIGEM) * k;
+  const centroY = (MOEDA.cy - ORIGEM) * k;
+  return { raio, centroX, centroY, left: centroX - raio, top: centroY - raio, width: raio * 2, height: raio * 2 };
+}
+
+export function Logo({ tamanho = 88, paleta = 'verde' }: { tamanho?: number; paleta?: NomePaleta }) {
+  const moeda = posicaoDaMoeda(tamanho);
   return (
-    <View
-      style={{ width: tamanho, height: tamanho }}
-      accessibilityRole="image"
-      accessibilityLabel="K Financeiro"
-    >
+    <View style={{ width: tamanho, height: tamanho }} accessibilityRole="image" accessibilityLabel={NOME_DO_APP}>
       <SvgLogo tamanho={tamanho} paleta={paleta}>
-        {PECAS.map((peca) => (
-          <Fragment key={peca.chave}>{peca.desenhar(paleta)}</Fragment>
+        {FORMAS.map((forma) => (
+          <Path key={forma.chave} d={forma.caminho} fill={tinta(paleta, forma.tinta)} />
         ))}
       </SvgLogo>
-      <View
-        style={[
-          estilos.moeda,
-          {
-            left: (MOEDA.cx - ORIGEM) * k - raio,
-            top: (MOEDA.cy - ORIGEM) * k - raio,
-          },
-        ]}
-      >
-        <MoedaSvg tamanho={raio * 2} paleta={paleta} />
+      <View style={[estilos.moeda, { left: moeda.left, top: moeda.top }]}>
+        <MoedaSvg tamanho={moeda.width} paleta={paleta} />
       </View>
     </View>
   );
@@ -197,8 +149,6 @@ export function Marca({ tamanho = 40 }: { tamanho?: number }) {
     </View>
   );
 }
-
-export const NOME_DO_APP = 'K Financeiro';
 
 const estilos = StyleSheet.create({
   moeda: { position: 'absolute' },
