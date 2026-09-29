@@ -59,8 +59,24 @@ type PluggyTransaction = {
   amount?: number | null;
   currencyCode?: string | null;
   category?: string | null;
-  merchant?: { name?: string | null; businessName?: string | null } | null;
-  paymentData?: { paymentMethod?: string | null } | null;
+  merchant?: {
+    name?: string | null;
+    businessName?: string | null;
+    cnpj?: string | null;
+    cnae?: string | null;
+    category?: string | null;
+  } | null;
+  paymentData?: {
+    paymentMethod?: string | null;
+    reason?: string | null;
+    payer?: PluggyParticipante | null;
+    receiver?: PluggyParticipante | null;
+  } | null;
+};
+
+type PluggyParticipante = {
+  name?: string | null;
+  documentNumber?: { type?: string | null; value?: string | null } | null;
 };
 
 type Pagina<T> = { results?: T[]; total?: number; totalPages?: number; page?: number };
@@ -231,6 +247,24 @@ function valorComSinal(transacao: PluggyTransaction): number {
   return transacao.type === 'DEBIT' ? -absoluto : absoluto;
 }
 
+function somenteCnpj(participante: PluggyParticipante | null | undefined): string | null {
+  const digitos = (participante?.documentNumber?.value ?? '').replace(/\D/g, '');
+  const tipo = participante?.documentNumber?.type?.toUpperCase();
+  return digitos.length === 14 && tipo !== 'CPF' ? digitos : null;
+}
+
+function dadosDaContraparte(transacao: PluggyTransaction) {
+  const outraParte =
+    transacao.type === 'DEBIT' ? transacao.paymentData?.receiver : transacao.paymentData?.payer;
+  const cnpjDoEstabelecimento = (transacao.merchant?.cnpj ?? '').replace(/\D/g, '');
+  return {
+    contraparte: outraParte?.name?.trim() || null,
+    cnpj: cnpjDoEstabelecimento.length === 14 ? cnpjDoEstabelecimento : somenteCnpj(outraParte),
+    atividade: transacao.merchant?.category ?? transacao.merchant?.cnae ?? null,
+    mensagem: transacao.paymentData?.reason?.trim() || null,
+  };
+}
+
 // Os acentos viram caracteres combinantes depois do normalize('NFD'),
 // e e essa faixa que removemos. Montado via string para os escapes
 // ficarem visiveis no editor.
@@ -281,7 +315,7 @@ async function aplicarRegras(db: SupabaseClient): Promise<number> {
 
   const { data: pendentes } = await db
     .from('transacoes')
-    .select('id, descricao, estabelecimento')
+    .select('id, descricao, estabelecimento, contraparte')
     .is('categoria_id', null)
     .eq('ignorada', false)
     .limit(2000);
@@ -293,7 +327,7 @@ async function aplicarRegras(db: SupabaseClient): Promise<number> {
   const porRegra = new Map<string, { regra: (typeof regras)[number]; ids: string[] }>();
 
   for (const transacao of pendentes) {
-    const alvo = semAcento(`${transacao.descricao ?? ''} ${transacao.estabelecimento ?? ''}`);
+    const alvo = semAcento(`${transacao.descricao ?? ''} ${transacao.estabelecimento ?? ''} ${transacao.contraparte ?? ''}`);
     const regra = regras.find((r) => alvo.includes(semAcento(r.padrao)));
     if (!regra) continue;
 
@@ -393,6 +427,7 @@ async function sincronizar(db: SupabaseClient, dias: number) {
             categoria_pluggy: transacao.category ?? null,
             metodo: transacao.paymentData?.paymentMethod ?? null,
             estabelecimento: transacao.merchant?.name ?? transacao.merchant?.businessName ?? null,
+            ...dadosDaContraparte(transacao),
             origem: 'pluggy' as const,
           }));
         if (linhas.length === 0) continue;

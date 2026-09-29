@@ -80,7 +80,7 @@ async function api(caminho, opcoes = {}) {
 // ------------------------------------------------------------
 async function sugerir() {
   const linhas = await api(
-    '/transacoes?select=descricao,estabelecimento,valor&categoria_id=is.null&ignorada=is.false&valor=lt.0&limit=2000',
+    '/transacoes?select=descricao,estabelecimento,contraparte,valor&categoria_id=is.null&ignorada=is.false&valor=lt.0&limit=2000',
   );
 
   if (linhas.length === 0) {
@@ -91,7 +91,7 @@ async function sugerir() {
   const grupos = new Map();
   for (const linha of linhas) {
     const chaveGrupo =
-      trechoBuscavel(`${linha.descricao ?? ''} ${linha.estabelecimento ?? ''}`) ||
+      trechoBuscavel(`${linha.contraparte ?? linha.estabelecimento ?? linha.descricao ?? ''}`) ||
       '(sem descricao)';
 
     const atual = grupos.get(chaveGrupo) ?? { quantidade: 0, total: 0 };
@@ -209,7 +209,7 @@ async function aplicar() {
 
   // --- 3. classificar o que ja existe ---
   const pendentes = await api(
-    '/transacoes?select=id,descricao,estabelecimento,valor&categoria_id=is.null&ignorada=is.false&limit=5000',
+    '/transacoes?select=id,descricao,estabelecimento,contraparte,valor&categoria_id=is.null&ignorada=is.false&limit=5000',
   );
 
   const ordenadas = [...regras].sort((a, b) => a.prioridade - b.prioridade);
@@ -218,7 +218,7 @@ async function aplicar() {
   const trechosIgnorar = (config.ignorar ?? []).map((t) => semAcento(t)).filter(Boolean);
 
   for (const t of pendentes) {
-    const alvo = semAcento(`${t.descricao ?? ''} ${t.estabelecimento ?? ''}`);
+    const alvo = semAcento(`${t.descricao ?? ''} ${t.estabelecimento ?? ''} ${t.contraparte ?? ''}`);
 
     if (trechosIgnorar.some((p) => alvo.includes(p))) {
       paraIgnorar.push(t.id);
