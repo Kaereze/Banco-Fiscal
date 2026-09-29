@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useDados } from '@/lib/dados';
-import { chaveMes, deslocaMes, mesPorExtenso } from '@/lib/format';
-import { cores, espaco, fonte, raio } from '@/lib/theme';
+import { chaveMes, deslocaMes, mesPorExtenso, primeiraMaiuscula } from '@/lib/format';
+import { ALTURA_TOQUE, cores, espaco, fonte, raio, sombra } from '@/lib/theme';
 
-/** Navegação entre meses. Não deixa avançar para o futuro. */
 export function SeletorMes() {
   const { mes, irParaMes } = useDados();
   const mesAtual = chaveMes(new Date());
@@ -12,24 +12,20 @@ export function SeletorMes() {
 
   return (
     <View style={estilos.linha}>
-      <Seta
-        direcao="anterior"
-        onPress={() => irParaMes(deslocaMes(mes, -1))}
-        habilitada
-      />
+      <Seta direcao="anterior" habilitada onPress={() => irParaMes(deslocaMes(mes, -1))} />
       <Pressable
         onPress={() => irParaMes(mesAtual)}
         accessibilityRole="button"
         accessibilityLabel={`Mês em foco: ${mesPorExtenso(mes)}. Toque para voltar ao mês atual.`}
         style={estilos.centro}
       >
-        <Text style={estilos.mes}>{mesPorExtenso(mes)}</Text>
-        {mes !== mesAtual ? <Text style={estilos.voltar}>toque para voltar ao mês atual</Text> : null}
+        <Text style={estilos.mes}>{primeiraMaiuscula(mesPorExtenso(mes))}</Text>
+        {mes !== mesAtual ? <Text style={estilos.voltar}>voltar ao mês atual</Text> : null}
       </Pressable>
       <Seta
         direcao="proximo"
-        onPress={() => podeAvancar && irParaMes(deslocaMes(mes, 1))}
         habilitada={podeAvancar}
+        onPress={() => irParaMes(deslocaMes(mes, 1))}
       />
     </View>
   );
@@ -37,12 +33,12 @@ export function SeletorMes() {
 
 function Seta({
   direcao,
-  onPress,
   habilitada,
+  onPress,
 }: {
   direcao: 'anterior' | 'proximo';
-  onPress: () => void;
   habilitada: boolean;
+  onPress: () => void;
 }) {
   return (
     <Pressable
@@ -50,12 +46,14 @@ function Seta({
       disabled={!habilitada}
       accessibilityRole="button"
       accessibilityLabel={direcao === 'anterior' ? 'Mês anterior' : 'Próximo mês'}
-      style={({ pressed }) => [
-        estilos.seta,
-        { opacity: !habilitada ? 0.25 : pressed ? 0.6 : 1 },
-      ]}
+      accessibilityState={{ disabled: !habilitada }}
+      style={({ pressed }) => [estilos.seta, { opacity: !habilitada ? 0.3 : pressed ? 0.6 : 1 }]}
     >
-      <Text style={estilos.setaTexto}>{direcao === 'anterior' ? '‹' : '›'}</Text>
+      <Ionicons
+        name={direcao === 'anterior' ? 'chevron-back' : 'chevron-forward'}
+        size={20}
+        color={cores.verdeEscuro}
+      />
     </Pressable>
   );
 }
@@ -65,35 +63,24 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: espaco.sm,
+    padding: espaco.xs,
+    borderRadius: raio.pilula,
+    backgroundColor: cores.superficie,
+    ...sombra,
   },
-  centro: {
-    flex: 1,
-    alignItems: 'center',
-  },
+  centro: { flex: 1, alignItems: 'center' },
   mes: {
-    fontSize: fonte.subtitulo,
+    fontSize: fonte.corpo,
     fontWeight: '700',
-    color: cores.texto,
-    textTransform: 'capitalize',
+    color: cores.verdeEscuro,
   },
-  voltar: {
-    fontSize: fonte.mini,
-    color: cores.primaria,
-  },
+  voltar: { fontSize: fonte.mini, color: cores.primaria, fontWeight: '600' },
   seta: {
-    width: 44,
-    height: 44,
+    width: ALTURA_TOQUE,
+    height: ALTURA_TOQUE,
     borderRadius: raio.pilula,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: cores.superficie,
-    borderWidth: 1,
-    borderColor: cores.borda,
-  },
-  setaTexto: {
-    fontSize: 26,
-    lineHeight: 30,
-    color: cores.texto,
-    fontWeight: '700',
+    backgroundColor: cores.primariaSuave,
   },
 });

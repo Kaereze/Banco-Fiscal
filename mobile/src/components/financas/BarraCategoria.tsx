@@ -7,15 +7,10 @@ import type { Categoria } from '@/lib/types';
 type Props = {
   categoria: Categoria | null;
   total: number;
-  /** Fatia do gasto do mês, de 0 a 1. */
   fatia: number;
   limite: number | null;
 };
 
-/**
- * Quando existe orçamento, a barra passa a medir o consumo dele (e fica
- * vermelha se estourar). Sem orçamento, mede a fatia do gasto do mês.
- */
 export function BarraCategoria({ categoria, total, fatia, limite }: Props) {
   const temOrcamento = limite !== null && limite > 0;
   const consumo = temOrcamento ? total / limite : fatia;
@@ -56,7 +51,7 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     gap: espaco.sm,
   },
-  emoji: { fontSize: 18 },
+  emoji: { width: 26, fontSize: 18, textAlign: 'center' },
   nome: {
     flex: 1,
     fontSize: fonte.corpo,
