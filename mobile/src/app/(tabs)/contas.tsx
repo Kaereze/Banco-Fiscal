@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Desce, Sobe } from '@/components/animacao';
+import { useBuscaNoBanco } from '@/components/carregamento/useBuscaNoBanco';
 import { CartaoConta } from '@/components/financas/CartaoConta';
 import { CartaoSaldo } from '@/components/financas/CartaoSaldo';
 import { StatusSincronizacao } from '@/components/financas/StatusSincronizacao';
@@ -10,7 +11,8 @@ import { useDados } from '@/lib/dados';
 import { espaco } from '@/lib/theme';
 
 export default function Contas() {
-  const { contas, ultimaSync, sincronizando, sincronizarPluggy, recarregar, carregando, erro } = useDados();
+  const { contas, ultimaSync, sincronizando, recarregar, carregando, erro } = useDados();
+  const buscarNoBanco = useBuscaNoBanco();
 
   const emConta = contas.filter((c) => c.tipo !== 'CREDIT');
   const cartoes = contas.filter((c) => c.tipo === 'CREDIT');
@@ -33,13 +35,13 @@ export default function Contas() {
           titulo={sincronizando ? 'Sincronizando...' : 'Sincronizar agora'}
           icone="sync"
           carregando={sincronizando}
-          onPress={() => void sincronizarPluggy()}
+          onPress={() => void buscarNoBanco()}
         />
         <Botao
           titulo="Recarregar 2 anos de histórico"
           variante="secundario"
           desabilitado={sincronizando}
-          onPress={() => void sincronizarPluggy(true)}
+          onPress={() => void buscarNoBanco(true)}
         />
       </Sobe>
 

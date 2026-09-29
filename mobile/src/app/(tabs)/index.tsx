@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { chaveDeEntrada, Desce, Sobe } from '@/components/animacao';
+import { useBuscaNoBanco } from '@/components/carregamento/useBuscaNoBanco';
 import { BarraCategoria } from '@/components/financas/BarraCategoria';
 import { CartaoMetrica, LinhaMetricas } from '@/components/financas/CartaoMetrica';
 import { CartaoSaldo, LinhaSaldo } from '@/components/financas/CartaoSaldo';
@@ -21,6 +22,7 @@ const ULTIMOS_LANCAMENTOS = 5;
 
 export default function Inicio() {
   const router = useRouter();
+  const buscarNoBanco = useBuscaNoBanco();
   const { perfil, perfilResolvido } = useSessao();
   const {
     carregando,
@@ -34,7 +36,6 @@ export default function Inicio() {
     ultimaSync,
     gastoMesAnterior,
     recarregar,
-    sincronizarPluggy,
   } = useDados();
 
   const resumo = useMemo(
@@ -110,7 +111,7 @@ export default function Inicio() {
             icone="sync"
             variante="secundario"
             carregando={sincronizando}
-            onPress={() => void sincronizarPluggy()}
+            onPress={() => void buscarNoBanco()}
           />
         </View>
       </Sobe>
