@@ -18,8 +18,6 @@ type ContextoSessao = {
   carregando: boolean;
   perfilResolvido: boolean;
   logado: boolean;
-  aberturaPendente: boolean;
-  concluirAbertura: () => void;
   concluirLogin: () => void;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => Promise<void>;
@@ -33,7 +31,6 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Session | null>(null);
   const [perfilBuscado, setPerfilBuscado] = useState<PerfilBuscado | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [aberturaPendente, setAberturaPendente] = useState(false);
   const [confirmandoLogin, setConfirmandoLogin] = useState(false);
 
   useEffect(() => {
@@ -71,12 +68,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
 
   const logado = sessao !== null && !confirmandoLogin;
 
-  const concluirAbertura = useCallback(() => setAberturaPendente(false), []);
-
-  const concluirLogin = useCallback(() => {
-    setAberturaPendente(true);
-    setConfirmandoLogin(false);
-  }, []);
+  const concluirLogin = useCallback(() => setConfirmandoLogin(false), []);
 
   const entrar = useCallback(async (email: string, senha: string) => {
     setConfirmandoLogin(true);
@@ -91,7 +83,6 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   }, []);
 
   const sair = useCallback(async () => {
-    setAberturaPendente(false);
     setConfirmandoLogin(false);
     await supabase.auth.signOut();
   }, []);
@@ -103,8 +94,6 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       carregando,
       perfilResolvido,
       logado,
-      aberturaPendente,
-      concluirAbertura,
       concluirLogin,
       entrar,
       sair,
@@ -115,8 +104,6 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       carregando,
       perfilResolvido,
       logado,
-      aberturaPendente,
-      concluirAbertura,
       concluirLogin,
       entrar,
       sair,

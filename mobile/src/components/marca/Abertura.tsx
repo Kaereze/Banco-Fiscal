@@ -1,70 +1,61 @@
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-import { aoTerminar, Sobe } from '@/components/animacao';
+import { Sobe, useTransicao } from '@/components/animacao';
 import { NOME_DO_APP } from '@/components/marca/Logo';
 import { LogoMoeda } from '@/components/marca/LogoMoeda';
 import { useDados } from '@/lib/dados';
+import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte } from '@/lib/theme';
 
 const TAMANHO_LOGO = 200;
 const DURACAO_SAIDA = 350;
-const ESPERA_MAXIMA_DOS_DADOS = 8000;
+const ESPERA_MAXIMA = 10000;
 
 type Etapa = 'logo' | 'saudacao' | 'esperando';
 
-export function Abertura({ nome, aoConcluir }: { nome?: string | null; aoConcluir: () => void }) {
-  const { carregando } = useDados();
+export function Abertura({ aoConcluir }: { aoConcluir: () => void }) {
+  const { carregando: verificandoSessao, logado, perfil } = useSessao();
+  const { carregando: carregandoDados } = useDados();
   const [etapa, setEtapa] = useState<Etapa>('logo');
   const [desistiuDeEsperar, setDesistiuDeEsperar] = useState(false);
-  const opacidade = useSharedValue(1);
 
   const logoPronta = useCallback(() => setEtapa('saudacao'), []);
   const saudacaoPronta = useCallback(() => setEtapa('esperando'), []);
 
   useEffect(() => {
-    const limite = setTimeout(() => setDesistiuDeEsperar(true), ESPERA_MAXIMA_DOS_DADOS);
+    const limite = setTimeout(() => setDesistiuDeEsperar(true), ESPERA_MAXIMA);
     return () => clearTimeout(limite);
   }, []);
 
-  const saindo = desistiuDeEsperar || (etapa === 'esperando' && !carregando);
+  const appPronto = !verificandoSessao && (!logado || !carregandoDados);
+  const saindo = desistiuDeEsperar || (etapa === 'esperando' && appPronto);
+  const saida = useTransicao(saindo, aoConcluir, undefined, DURACAO_SAIDA);
+  const estiloSaida = useAnimatedStyle(() => ({ opacity: 1 - saida.value }));
 
-  useEffect(() => {
-    if (!saindo) return;
-    opacidade.value = withTiming(0, { duration: DURACAO_SAIDA }, aoTerminar(aoConcluir));
-  }, [saindo, opacidade, aoConcluir]);
-
-  const estiloTela = useAnimatedStyle(() => ({ opacity: opacidade.value }));
-  const primeiroNome = nome?.trim().split(/\s+/)[0];
+  const primeiroNome = perfil?.nome.trim().split(/\s+/)[0];
 
   return (
     <Animated.View
       pointerEvents={saindo ? 'none' : 'auto'}
-      style={[StyleSheet.absoluteFill, estilos.tela, estiloTela]}
+      style={[StyleSheet.absoluteFill, estilos.tela, estiloSaida]}
     >
       <View style={estilos.centro}>
         <LogoMoeda tamanho={TAMANHO_LOGO} aoConcluir={logoPronta} />
 
         {etapa !== 'logo' ? (
           <Sobe aoTerminar={saudacaoPronta} style={estilos.saudacao}>
-            <Text style={estilos.titulo}>{primeiroNome ? `Olá, ${primeiroNome}!` : 'Bem-vindo!'}</Text>
-            <Text style={estilos.subtitulo}>Preparando as finanças da família…</Text>
+            <Text style={estilos.titulo}>{primeiroNome ? `Olá, ${primeiroNome}!` : NOME_DO_APP}</Text>
+            <Text style={estilos.subtitulo}>
+              {primeiroNome ? 'Preparando as finanças da família…' : 'As finanças da família, num lugar só.'}
+            </Text>
           </Sobe>
         ) : (
           <View style={estilos.saudacao} />
         )}
       </View>
     </Animated.View>
-  );
-}
-
-export function TelaDeEspera() {
-  return (
-    <View style={[estilos.tela, estilos.centro]}>
-      <LogoMoeda tamanho={TAMANHO_LOGO} />
-      <Text style={estilos.marca}>{NOME_DO_APP}</Text>
-    </View>
   );
 }
 
@@ -80,5 +71,4 @@ const estilos = StyleSheet.create({
   saudacao: { alignItems: 'center', gap: espaco.sm, minHeight: 88, marginTop: espaco.lg },
   titulo: { fontSize: fonte.titulo, fontWeight: '800', color: cores.verdeEscuro, textAlign: 'center' },
   subtitulo: { fontSize: fonte.corpo, color: cores.textoSuave, textAlign: 'center' },
-  marca: { fontSize: fonte.subtitulo, fontWeight: '800', color: cores.verdeEscuro, marginTop: espaco.lg },
 });

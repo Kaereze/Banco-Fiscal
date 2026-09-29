@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Sobe } from '@/components/animacao';
+import { useCarregamento } from '@/components/carregamento/Carregamento';
 import { conteudoCentralizado } from '@/components/layout/Tela';
 import { Logo, NOME_DO_APP } from '@/components/marca/Logo';
 import { Botao, Campo, type Resultado } from '@/components/ui';
@@ -21,11 +22,15 @@ import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
 const ESPERA_MAXIMA_POR_ETAPA = 3000;
+const PAUSA_NO_RESULTADO = 900;
 
-type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao';
+type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao' | 'pausa';
+
+const ETAPAS_DO_RESULTADO: Etapa[] = ['campos', 'botao', 'pausa'];
 
 export default function Login() {
   const { entrar, concluirLogin } = useSessao();
+  const { executar } = useCarregamento();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [etapa, setEtapa] = useState<Etapa>('formulario');
@@ -38,9 +43,16 @@ export default function Login() {
   }, [resultado, concluirLogin]);
 
   const camposMostrados = useCallback(() => setEtapa('botao'), []);
+  const botaoMostrado = useCallback(() => setEtapa('pausa'), []);
 
   useEffect(() => {
-    if (etapa !== 'campos' && etapa !== 'botao') return;
+    if (etapa !== 'pausa') return;
+    const pausa = setTimeout(finalizar, PAUSA_NO_RESULTADO);
+    return () => clearTimeout(pausa);
+  }, [etapa, finalizar]);
+
+  useEffect(() => {
+    if (!ETAPAS_DO_RESULTADO.includes(etapa)) return;
     const limite = setTimeout(finalizar, ESPERA_MAXIMA_POR_ETAPA);
     return () => clearTimeout(limite);
   }, [etapa, finalizar]);
@@ -53,7 +65,6 @@ export default function Login() {
   }
 
   function mostrar(novo: Resultado, mensagem?: string) {
-    Keyboard.dismiss();
     if (mensagem) AccessibilityInfo.announceForAccessibility(mensagem);
     setResultado(novo);
     setEtapa('campos');
@@ -61,6 +72,7 @@ export default function Login() {
 
   async function aoEntrar() {
     if (etapa !== 'formulario') return;
+    Keyboard.dismiss();
     setResultado(null);
     if (!email.trim() || !senha) {
       mostrar('erro', 'Preencha o e-mail e a senha.');
@@ -68,7 +80,7 @@ export default function Login() {
     }
     setEtapa('enviando');
     try {
-      await entrar(email, senha);
+      await executar(() => entrar(email, senha), 'Verificando seu acesso…');
       mostrar('sucesso');
     } catch (e) {
       mostrar('erro', e instanceof Error ? e.message : 'Não consegui entrar.');
@@ -76,7 +88,7 @@ export default function Login() {
   }
 
   const resultadoDosCampos = etapa === 'enviando' || !resultado ? undefined : resultado;
-  const resultadoDoBotao = etapa === 'botao' && resultado ? resultado : undefined;
+  const resultadoDoBotao = (etapa === 'botao' || etapa === 'pausa') && resultado ? resultado : undefined;
 
   function esqueciASenha() {
     Alert.alert(
@@ -135,9 +147,10 @@ export default function Login() {
             <Botao
               titulo="Entrar"
               onPress={aoEntrar}
-              carregando={etapa === 'enviando' || etapa === 'campos'}
+              carregando={etapa === 'enviando'}
+              desabilitado={etapa === 'campos'}
               resultado={resultadoDoBotao}
-              aoMostrarResultado={finalizar}
+              aoMostrarResultado={botaoMostrado}
             />
 
             <Pressable onPress={esqueciASenha} hitSlop={12} accessibilityRole="button" style={estilos.link}>
