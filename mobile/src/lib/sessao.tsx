@@ -17,8 +17,10 @@ type ContextoSessao = {
   perfil: Perfil | null;
   carregando: boolean;
   perfilResolvido: boolean;
+  logado: boolean;
   aberturaPendente: boolean;
   concluirAbertura: () => void;
+  concluirLogin: () => void;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => Promise<void>;
 };
@@ -32,6 +34,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [perfilBuscado, setPerfilBuscado] = useState<PerfilBuscado | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [aberturaPendente, setAberturaPendente] = useState(false);
+  const [confirmandoLogin, setConfirmandoLogin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -66,19 +69,30 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   const perfilResolvido = usuarioId !== null && perfilBuscado?.usuarioId === usuarioId;
   const perfil = perfilResolvido ? (perfilBuscado?.perfil ?? null) : null;
 
+  const logado = sessao !== null && !confirmandoLogin;
+
   const concluirAbertura = useCallback(() => setAberturaPendente(false), []);
 
+  const concluirLogin = useCallback(() => {
+    setAberturaPendente(true);
+    setConfirmandoLogin(false);
+  }, []);
+
   const entrar = useCallback(async (email: string, senha: string) => {
+    setConfirmandoLogin(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: senha,
     });
-    if (error) throw new Error(traduzErroDeLogin(error.message));
-    setAberturaPendente(true);
+    if (error) {
+      setConfirmandoLogin(false);
+      throw new Error(traduzErroDeLogin(error.message));
+    }
   }, []);
 
   const sair = useCallback(async () => {
     setAberturaPendente(false);
+    setConfirmandoLogin(false);
     await supabase.auth.signOut();
   }, []);
 
@@ -88,12 +102,25 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       perfil,
       carregando,
       perfilResolvido,
+      logado,
       aberturaPendente,
       concluirAbertura,
+      concluirLogin,
       entrar,
       sair,
     }),
-    [sessao, perfil, carregando, perfilResolvido, aberturaPendente, concluirAbertura, entrar, sair],
+    [
+      sessao,
+      perfil,
+      carregando,
+      perfilResolvido,
+      logado,
+      aberturaPendente,
+      concluirAbertura,
+      concluirLogin,
+      entrar,
+      sair,
+    ],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

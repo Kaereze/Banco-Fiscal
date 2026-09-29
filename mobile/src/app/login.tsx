@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,27 +19,42 @@ import { Aviso, Botao, Campo } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
+const ESPERA_MAXIMA_DA_CONFIRMACAO = 3000;
+
+type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao';
+
 export default function Login() {
-  const { entrar } = useSessao();
+  const { entrar, concluirLogin } = useSessao();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const [etapa, setEtapa] = useState<Etapa>('formulario');
   const campoSenha = useRef<TextInput>(null);
 
+  const confirmando = etapa === 'campos' || etapa === 'botao';
+  const camposConfirmados = useCallback(() => setEtapa('botao'), []);
+
+  useEffect(() => {
+    if (!confirmando) return;
+    const limite = setTimeout(concluirLogin, ESPERA_MAXIMA_DA_CONFIRMACAO);
+    return () => clearTimeout(limite);
+  }, [confirmando, concluirLogin]);
+
   async function aoEntrar() {
+    if (etapa !== 'formulario') return;
     if (!email.trim() || !senha) {
       setErro('Preencha o e-mail e a senha.');
       return;
     }
-    setEnviando(true);
+    setEtapa('enviando');
     setErro(null);
     try {
       await entrar(email, senha);
+      Keyboard.dismiss();
+      setEtapa('campos');
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui entrar.');
-    } finally {
-      setEnviando(false);
+      setEtapa('formulario');
     }
   }
 
@@ -78,6 +94,8 @@ export default function Login() {
               autoComplete="email"
               returnKeyType="next"
               onSubmitEditing={() => campoSenha.current?.focus()}
+              confirmado={confirmando}
+              aoConfirmar={camposConfirmados}
             />
             <Campo
               ref={campoSenha}
@@ -91,11 +109,18 @@ export default function Login() {
               autoComplete="password"
               returnKeyType="go"
               onSubmitEditing={aoEntrar}
+              confirmado={confirmando}
             />
 
             {erro ? <Aviso texto={erro} /> : null}
 
-            <Botao titulo="Entrar" onPress={aoEntrar} carregando={enviando} />
+            <Botao
+              titulo="Entrar"
+              onPress={aoEntrar}
+              carregando={etapa === 'enviando' || etapa === 'campos'}
+              confirmado={etapa === 'botao'}
+              aoConfirmar={concluirLogin}
+            />
 
             <Pressable onPress={esqueciASenha} hitSlop={12} accessibilityRole="button" style={estilos.link}>
               <Text style={estilos.linkTexto}>Esqueci minha senha</Text>
