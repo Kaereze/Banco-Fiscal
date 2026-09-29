@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Aviso, Botao, Campo } from '@/components/ui';
 import { Sobe } from '@/components/animacao';
-import { conteudoCentralizado } from '@/components/Pagina';
+import { conteudoCentralizado } from '@/components/layout/Tela';
+import { Logo, NOME_DO_APP } from '@/components/marca/Logo';
+import { Aviso, Botao, Campo } from '@/components/ui';
 import { useSessao } from '@/lib/sessao';
-import { cores, espaco, fonte } from '@/lib/theme';
+import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
 export default function Login() {
   const { entrar } = useSessao();
@@ -21,6 +24,7 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const campoSenha = useRef<TextInput>(null);
 
   async function aoEntrar() {
     if (!email.trim() || !senha) {
@@ -31,8 +35,6 @@ export default function Login() {
     setErro(null);
     try {
       await entrar(email, senha);
-      // A navegação acontece sozinha: o guard do _layout solta as abas
-      // assim que a sessão aparece.
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui entrar.');
     } finally {
@@ -40,44 +42,53 @@ export default function Login() {
     }
   }
 
+  function esqueciASenha() {
+    Alert.alert(
+      'Esqueceu a senha?',
+      'As contas são criadas por quem administra o app. Peça para redefinirem a sua senha.',
+    );
+  }
+
   return (
     <SafeAreaView style={estilos.tela}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={estilos.tela} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
+          contentContainerStyle={[conteudoCentralizado, estilos.conteudo]}
           keyboardShouldPersistTaps="handled"
         >
-          <Sobe indice={0}>
-            <View style={estilos.marca}>
-              <Text style={estilos.emoji}>🏦</Text>
-              <Text style={estilos.titulo}>Banco Fiscal</Text>
-              <Text style={estilos.subtitulo}>Os gastos da família, num lugar só.</Text>
-            </View>
+          <Sobe indice={0} style={estilos.marca}>
+            <Logo tamanho={88} />
+            <Text style={estilos.titulo} accessibilityRole="header">
+              Bem-vindo ao{'\n'}
+              {NOME_DO_APP}
+            </Text>
+            <Text style={estilos.subtitulo}>As finanças da família, num lugar só.</Text>
           </Sobe>
 
           <Sobe indice={1} style={estilos.formulario}>
             <Campo
-              rotulo="E-mail"
+              icone="mail-outline"
               value={email}
               onChangeText={setEmail}
-              placeholder="seu@email.com"
+              placeholder="E-mail"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
               textContentType="emailAddress"
+              autoComplete="email"
               returnKeyType="next"
+              onSubmitEditing={() => campoSenha.current?.focus()}
             />
             <Campo
-              rotulo="Senha"
+              ref={campoSenha}
+              icone="lock-closed-outline"
               value={senha}
               onChangeText={setSenha}
-              placeholder="••••••••"
+              placeholder="Senha"
               secureTextEntry
               autoCapitalize="none"
               textContentType="password"
+              autoComplete="password"
               returnKeyType="go"
               onSubmitEditing={aoEntrar}
             />
@@ -86,10 +97,9 @@ export default function Login() {
 
             <Botao titulo="Entrar" onPress={aoEntrar} carregando={enviando} />
 
-            <Text style={estilos.rodape}>
-              As contas são criadas por quem administra o app. Se não conseguir entrar, peça para
-              criarem a sua.
-            </Text>
+            <Pressable onPress={esqueciASenha} hitSlop={12} accessibilityRole="button" style={estilos.link}>
+              <Text style={estilos.linkTexto}>Esqueci minha senha</Text>
+            </Pressable>
           </Sobe>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -102,26 +112,20 @@ const estilos = StyleSheet.create({
   conteudo: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: espaco.xl,
-    gap: espaco.xxl,
+    paddingHorizontal: MARGEM_FORMULARIO,
+    paddingVertical: espaco.secao,
+    gap: espaco.secao,
   },
-  marca: { alignItems: 'center', gap: espaco.xs },
-  emoji: { fontSize: 56 },
+  marca: { alignItems: 'center', gap: espaco.md },
   titulo: {
-    fontSize: fonte.gigante,
+    fontSize: fonte.titulo,
+    lineHeight: 34,
     fontWeight: '800',
-    color: cores.texto,
-  },
-  subtitulo: {
-    fontSize: fonte.corpo,
-    color: cores.textoSuave,
+    color: cores.verdeEscuro,
     textAlign: 'center',
   },
-  formulario: { gap: espaco.lg },
-  rodape: {
-    fontSize: fonte.mini,
-    color: cores.textoFraco,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
+  subtitulo: { fontSize: fonte.corpo, color: cores.textoSuave, textAlign: 'center' },
+  formulario: { gap: espaco.md },
+  link: { alignSelf: 'center', paddingVertical: espaco.sm },
+  linkTexto: { fontSize: fonte.apoio, fontWeight: '700', color: cores.primaria },
 });

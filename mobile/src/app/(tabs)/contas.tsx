@@ -1,94 +1,37 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Aviso, Botao, Cartao, Titulo, Vazio } from '@/components/ui';
-import { Sobe } from '@/components/animacao';
-import { conteudoCentralizado } from '@/components/Pagina';
+import { Desce, Sobe } from '@/components/animacao';
+import { CartaoConta } from '@/components/financas/CartaoConta';
+import { CartaoSaldo } from '@/components/financas/CartaoSaldo';
+import { StatusSincronizacao } from '@/components/financas/StatusSincronizacao';
+import { TelaAba } from '@/components/layout/Tela';
+import { Aviso, Botao, CabecalhoTela, Carregando, Cartao, Secao, Titulo, Vazio } from '@/components/ui';
 import { useDados } from '@/lib/dados';
-import { moeda, tempoDesde } from '@/lib/format';
-import { cores, espaco, fonte, raio } from '@/lib/theme';
-import type { Conta } from '@/lib/types';
+import { espaco } from '@/lib/theme';
 
 export default function Contas() {
-  const { contas, ultimaSync, sincronizando, sincronizarPluggy, recarregar, carregando } = useDados();
-  const [atualizando, setAtualizando] = useState(false);
+  const { contas, ultimaSync, sincronizando, sincronizarPluggy, recarregar, carregando, erro } = useDados();
 
   const emConta = contas.filter((c) => c.tipo !== 'CREDIT');
   const cartoes = contas.filter((c) => c.tipo === 'CREDIT');
   const totalEmConta = emConta.reduce((soma, c) => soma + (c.saldo ?? 0), 0);
 
-  async function puxarParaAtualizar() {
-    setAtualizando(true);
-    await recarregar();
-    setAtualizando(false);
-  }
-
   return (
-    <ScrollView
-      contentContainerStyle={[estilos.conteudo, conteudoCentralizado]}
-      refreshControl={
-        <RefreshControl refreshing={atualizando} onRefresh={puxarParaAtualizar} tintColor={cores.primaria} />
-      }
-    >
-      {contas.length === 0 ? (
-        <Cartao>
-          {carregando ? (
-            <Text style={estilos.carregando}>Carregando...</Text>
-          ) : (
-            <Vazio
-              emoji="🔌"
-              titulo="Nenhuma conta conectada ainda"
-              texto="Conecte seus bancos em meu.pluggy.ai e toque no botão abaixo para trazê-los."
-            />
-          )}
-        </Cartao>
-      ) : (
-        <>
-          <Sobe indice={0}>
-          <Cartao style={estilos.destaque}>
-            <Text style={estilos.rotuloDestaque}>Saldo somado das contas</Text>
-            <Text style={[estilos.numeroDestaque, totalEmConta < 0 && { color: cores.saida }]}>
-              {totalEmConta < 0 ? '− ' : ''}
-              {moeda(totalEmConta)}
-            </Text>
-          </Cartao>
-          </Sobe>
+    <TelaAba aoAtualizar={recarregar}>
+      <Desce>
+        <CabecalhoTela titulo="Minhas Contas" subtitulo="Bancos conectados pela Pluggy" />
+      </Desce>
 
-          {emConta.length > 0 ? (
-            <Sobe indice={1}>
-              <View style={estilos.secao}>
-                <Titulo>Contas</Titulo>
-                {emConta.map((conta) => (
-                  <CartaoConta key={conta.id} conta={conta} />
-                ))}
-              </View>
-            </Sobe>
-          ) : null}
+      <Sobe indice={1}>
+        <StatusSincronizacao ultimaSync={ultimaSync} />
+      </Sobe>
 
-          {cartoes.length > 0 ? (
-            <Sobe indice={2}>
-              <View style={estilos.secao}>
-                <Titulo>Cartões de crédito</Titulo>
-                {cartoes.map((conta) => (
-                  <CartaoConta key={conta.id} conta={conta} cartao />
-                ))}
-              </View>
-            </Sobe>
-          ) : null}
-        </>
-      )}
+      {erro ? <Aviso texto={erro} /> : null}
 
-      {ultimaSync?.sucesso === false && ultimaSync.erro ? (
-        <Aviso texto={`Última sincronização falhou: ${ultimaSync.erro}`} />
-      ) : null}
-
-      <Cartao style={{ gap: espaco.md }}>
-        <Text style={estilos.syncTexto}>
-          Última atualização {tempoDesde(ultimaSync?.terminada_em ?? null)}.
-        </Text>
+      <Sobe indice={2} style={estilos.acoes}>
         <Botao
-          titulo={sincronizando ? 'Buscando...' : 'Buscar no banco agora'}
+          titulo={sincronizando ? 'Sincronizando...' : 'Sincronizar agora'}
+          icone="sync"
           carregando={sincronizando}
           onPress={() => void sincronizarPluggy()}
         />
@@ -98,97 +41,58 @@ export default function Contas() {
           desabilitado={sincronizando}
           onPress={() => void sincronizarPluggy(true)}
         />
-      </Cartao>
-    </ScrollView>
-  );
-}
+      </Sobe>
 
-function CartaoConta({ conta, cartao = false }: { conta: Conta; cartao?: boolean }) {
-  const saldo = conta.saldo ?? 0;
+      {contas.length === 0 ? (
+        <Cartao>
+          {carregando ? (
+            <Carregando />
+          ) : (
+            <Vazio
+              icone="link-outline"
+              titulo="Nenhuma conta conectada ainda"
+              texto="Conecte seus bancos em meu.pluggy.ai e toque em Sincronizar agora."
+            />
+          )}
+        </Cartao>
+      ) : (
+        <>
+          <Sobe indice={3}>
+            <CartaoSaldo rotulo="Saldo somado das contas" valor={totalEmConta} />
+          </Sobe>
 
-  return (
-    <Cartao style={estilos.conta}>
-      <View style={estilos.contaTopo}>
-        <View style={estilos.icone}>
-          <Ionicons
-            name={cartao ? 'card' : 'business'}
-            size={20}
-            color={cores.primaria}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={estilos.contaNome} numberOfLines={1}>
-            {conta.nome}
-          </Text>
-          <Text style={estilos.contaDetalhe} numberOfLines={1}>
-            {[conta.instituicao, conta.numero, conta.dono].filter(Boolean).join(' · ')}
-          </Text>
-        </View>
-      </View>
+          {emConta.length > 0 ? (
+            <Sobe indice={4}>
+              <Secao>
+                <Titulo>Contas</Titulo>
+                <View style={estilos.lista}>
+                  {emConta.map((conta) => (
+                    <CartaoConta key={conta.id} conta={conta} />
+                  ))}
+                </View>
+              </Secao>
+            </Sobe>
+          ) : null}
 
-      <View style={estilos.contaRodape}>
-        <Text style={estilos.contaRotulo}>{cartao ? 'Fatura atual' : 'Saldo'}</Text>
-        <Text style={[estilos.contaSaldo, saldo < 0 && { color: cores.saida }]}>
-          {saldo < 0 ? '− ' : ''}
-          {moeda(saldo)}
-        </Text>
-      </View>
-
-      {cartao && conta.limite ? (
-        <Text style={estilos.contaDetalhe}>Limite total {moeda(conta.limite)}</Text>
-      ) : null}
-    </Cartao>
+          {cartoes.length > 0 ? (
+            <Sobe indice={5}>
+              <Secao>
+                <Titulo>Cartões de crédito</Titulo>
+                <View style={estilos.lista}>
+                  {cartoes.map((conta) => (
+                    <CartaoConta key={conta.id} conta={conta} />
+                  ))}
+                </View>
+              </Secao>
+            </Sobe>
+          ) : null}
+        </>
+      )}
+    </TelaAba>
   );
 }
 
 const estilos = StyleSheet.create({
-  conteudo: {
-    padding: espaco.lg,
-    gap: espaco.lg,
-    paddingBottom: espaco.xxl,
-  },
-  destaque: { gap: espaco.xs },
-  rotuloDestaque: {
-    fontSize: fonte.apoio,
-    fontWeight: '600',
-    color: cores.textoSuave,
-  },
-  numeroDestaque: {
-    fontSize: fonte.gigante,
-    fontWeight: '800',
-    color: cores.texto,
-    fontVariant: ['tabular-nums'],
-  },
-  secao: { gap: espaco.md },
-  conta: { gap: espaco.md },
-  contaTopo: { flexDirection: 'row', alignItems: 'center', gap: espaco.md },
-  icone: {
-    width: 40,
-    height: 40,
-    borderRadius: raio.md,
-    backgroundColor: cores.primariaSuave,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contaNome: { fontSize: fonte.corpo, fontWeight: '700', color: cores.texto },
-  contaDetalhe: { fontSize: fonte.mini, color: cores.textoFraco },
-  contaRodape: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  contaRotulo: { fontSize: fonte.apoio, color: cores.textoSuave },
-  contaSaldo: {
-    fontSize: fonte.titulo,
-    fontWeight: '700',
-    color: cores.texto,
-    fontVariant: ['tabular-nums'],
-  },
-  syncTexto: { fontSize: fonte.apoio, color: cores.textoSuave },
-  carregando: {
-    fontSize: fonte.apoio,
-    color: cores.textoFraco,
-    textAlign: 'center',
-    paddingVertical: espaco.lg,
-  },
+  acoes: { gap: espaco.md },
+  lista: { gap: espaco.sm },
 });

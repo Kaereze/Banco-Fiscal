@@ -1,74 +1,57 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LARGURA_MAXIMA, NO_PC } from '@/components/Pagina';
-import { cores, fonte } from '@/lib/theme';
+import { LARGURA_MAXIMA } from '@/components/layout/Tela';
+import type { NomeIcone } from '@/components/ui';
+import { cores } from '@/lib/theme';
+
+const ABAS: { nome: string; titulo: string; icone: NomeIcone; iconeAtivo: NomeIcone }[] = [
+  { nome: 'index', titulo: 'Início', icone: 'home-outline', iconeAtivo: 'home' },
+  { nome: 'transacoes', titulo: 'Extrato', icone: 'swap-vertical-outline', iconeAtivo: 'swap-vertical' },
+  { nome: 'relatorios', titulo: 'Relatórios', icone: 'bar-chart-outline', iconeAtivo: 'bar-chart' },
+  { nome: 'contas', titulo: 'Contas', icone: 'wallet-outline', iconeAtivo: 'wallet' },
+  { nome: 'perfil', titulo: 'Perfil', icone: 'person-outline', iconeAtivo: 'person' },
+];
+
+const ALTURA_BARRA = 64;
+const RESPIRO_BARRA = 4;
 
 export default function LayoutAbas() {
+  const { bottom } = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: cores.fundo },
-        headerShadowVisible: false,
-        headerTitleStyle: { fontSize: fonte.titulo, fontWeight: '800', color: cores.texto },
-        // No PC o cabeçalho ocupa a tela inteira enquanto o conteúdo fica
-        // centralizado; com o título à esquerda os dois se desalinham. No
-        // celular a largura é a mesma e o alinhamento à esquerda continua.
-        headerTitleAlign: NO_PC ? 'center' : 'left',
-        tabBarActiveTintColor: cores.primaria,
+        headerShown: false,
+        tabBarActiveTintColor: cores.verdeEscuro,
         tabBarInactiveTintColor: cores.textoFraco,
-        // Numa tela larga, 4 abas espalhadas por 1920px ficam longe demais
-        // umas das outras. O limite acompanha o do conteudo; no celular a
-        // tela e mais estreita que ele e nada muda.
         tabBarStyle: {
+          height: ALTURA_BARRA + bottom,
+          paddingTop: RESPIRO_BARRA,
+          paddingBottom: bottom + RESPIRO_BARRA,
           backgroundColor: cores.superficie,
           borderTopColor: cores.borda,
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 6,
           width: '100%',
           maxWidth: LARGURA_MAXIMA,
           alignSelf: 'center',
         },
-        tabBarLabelStyle: { fontSize: fonte.mini, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         sceneStyle: { backgroundColor: cores.fundo },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="resumo"
-        options={{
-          title: 'Resumo',
-          tabBarIcon: ({ color, size }) => <Ionicons name="pie-chart" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="transacoes"
-        options={{
-          title: 'Gastos',
-          tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="contas"
-        options={{
-          title: 'Contas',
-          tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="ajustes"
-        options={{
-          title: 'Ajustes',
-          tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
-        }}
-      />
+      {ABAS.map((aba) => (
+        <Tabs.Screen
+          key={aba.nome}
+          name={aba.nome}
+          options={{
+            title: aba.titulo,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? aba.iconeAtivo : aba.icone} size={24} color={color} />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

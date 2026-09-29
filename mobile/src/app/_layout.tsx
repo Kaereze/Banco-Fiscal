@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Abertura, TelaDeEspera } from '@/components/Abertura';
+import { Abertura, TelaDeEspera } from '@/components/marca/Abertura';
 import { ProvedorDados } from '@/lib/dados';
 import { ProvedorSessao, useSessao } from '@/lib/sessao';
 import { cores, fonte } from '@/lib/theme';
@@ -12,7 +12,7 @@ export default function LayoutRaiz() {
     <SafeAreaProvider>
       <ProvedorSessao>
         <Navegacao />
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </ProvedorSessao>
     </SafeAreaProvider>
   );
@@ -21,8 +21,6 @@ export default function LayoutRaiz() {
 function Navegacao() {
   const { sessao, carregando, perfil, aberturaPendente, concluirAbertura } = useSessao();
 
-  // Enquanto não sabemos se há sessão salva, a tela de espera evita o
-  // piscar do login para quem já está logado.
   if (carregando) return <TelaDeEspera />;
 
   return (
@@ -31,21 +29,18 @@ function Navegacao() {
         screenOptions={{
           headerStyle: { backgroundColor: cores.fundo },
           headerShadowVisible: false,
-          headerTitleStyle: { fontSize: fonte.subtitulo, fontWeight: '700', color: cores.texto },
-          headerTintColor: cores.primaria,
+          headerTitleStyle: { fontSize: fonte.secao, fontWeight: '700', color: cores.verdeEscuro },
+          headerTintColor: cores.verdeEscuro,
+          headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: cores.fundo },
         }}
       >
         <Stack.Protected guard={Boolean(sessao)}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="transacao/[id]"
-            options={{ title: 'Transação', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="lancamento"
-            options={{ title: 'Novo lançamento', presentation: 'modal' }}
-          />
+          <Stack.Screen name="transacao/[id]" options={{ title: 'Detalhes', presentation: 'modal' }} />
+          <Stack.Screen name="lancamento" options={{ title: 'Novo lançamento', presentation: 'modal' }} />
+          <Stack.Screen name="orcamento" options={{ title: 'Orçamento do mês' }} />
+          <Stack.Screen name="sobre" options={{ title: 'Como os dados chegam' }} />
         </Stack.Protected>
 
         <Stack.Protected guard={!sessao}>
@@ -53,7 +48,6 @@ function Navegacao() {
         </Stack.Protected>
       </Stack>
 
-      {/* Cobre as abas enquanto elas carregam os dados por baixo. */}
       {aberturaPendente && sessao ? (
         <Abertura nome={perfil?.nome} aoConcluir={concluirAbertura} />
       ) : null}
