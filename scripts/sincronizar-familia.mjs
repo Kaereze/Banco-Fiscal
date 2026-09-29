@@ -78,14 +78,14 @@ function erroFatal(mensagem) {
 /**
  * Devolve o motivo de a senha ser fraca, ou null se estiver boa.
  *
- * O criterio que mais importa e o comprimento: 12 caracteres aleatorios
- * resistem a forca bruta melhor do que 8 com simbolo e maiuscula. Os outros
+ * O criterio que mais importa e o comprimento: 6 caracteres
+ * sao o minimo; mais longas resistem melhor a forca bruta. Os outros
  * testes pegam os padroes que as pessoas realmente usam — o proprio nome, o
  * e-mail, "senha123" — que qualquer lista de ataque tenta primeiro.
  */
 function senhaFraca(senha, email, nome) {
   if (!senha || typeof senha !== 'string') return 'falta "senha".';
-  if (senha.length < 12) return 'a senha precisa ter pelo menos 12 caracteres.';
+  if (senha.length < 6) return 'a senha precisa ter pelo menos 6 caracteres.';
 
   const baixa = senha.toLowerCase();
 
@@ -103,7 +103,7 @@ function senhaFraca(senha, email, nome) {
     return 'a senha contem o proprio nome.';
   }
 
-  const obvias = ['senha', 'password', '123456', 'qwerty', 'admin', 'banco', 'familia'];
+  const obvias = ['senha', 'password', 'qwerty', 'admin', 'banco', 'familia'];
   const achada = obvias.find((p) => baixa.includes(p));
   if (achada) return `a senha contem "${achada}", que esta em qualquer lista de ataque.`;
 

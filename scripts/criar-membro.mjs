@@ -32,8 +32,8 @@ if (!email || !senha || !nome) {
   console.error('Uso: node scripts/criar-membro.mjs <email> <senha> <nome>');
   process.exit(1);
 }
-if (senha.length < 8) {
-  console.error('A senha precisa ter pelo menos 8 caracteres.');
+if (senha.length < 6) {
+  console.error('A senha precisa ter pelo menos 6 caracteres.');
   process.exit(1);
 }
 

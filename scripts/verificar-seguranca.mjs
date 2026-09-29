@@ -151,7 +151,7 @@ function verificarSenhas(familia) {
     const primeiroNome = (m.nome ?? '').trim().split(/\s+/)[0].toLowerCase();
 
     const motivos = [];
-    if (senha.length < 12) motivos.push(`${senha.length} caracteres`);
+    if (senha.length < 6) motivos.push(`${senha.length} caracteres`);
     if (usuario.length >= 4 && baixa.includes(usuario)) motivos.push('contem o e-mail');
     if (primeiroNome.length >= 4 && baixa.includes(primeiroNome)) motivos.push('contem o nome');
     if (/^(TROQUE|COLOQUE|COLE)/i.test(senha)) motivos.push('valor de exemplo');
