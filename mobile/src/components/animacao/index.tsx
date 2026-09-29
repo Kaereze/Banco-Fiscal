@@ -4,6 +4,7 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  FadeOutLeft,
   LinearTransition,
   ZoomIn,
   type BaseAnimationBuilder,
@@ -66,6 +67,14 @@ export function Surge({ children, indice = 0, aoTerminar, ...resto }: EntradaPro
 export function Estoura({ children, indice = 0, aoTerminar, ...resto }: EntradaProps) {
   return (
     <Animated.View entering={entrada(ZoomIn, indice, aoTerminar, DURACAO_ESTOURO)} {...resto}>
+      {children}
+    </Animated.View>
+  );
+}
+
+export function SaiDeLado({ children, ...resto }: ViewProps & { children: ReactNode }) {
+  return (
+    <Animated.View exiting={FadeOutLeft.duration(DURACAO)} layout={LinearTransition.duration(260)} {...resto}>
       {children}
     </Animated.View>
   );
