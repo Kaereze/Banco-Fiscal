@@ -16,7 +16,7 @@ export { aoTerminar } from './sequencia';
 export { DURACAO_TRANSICAO, useTransicao } from './transicao';
 
 const DURACAO = 420;
-const DURACAO_ESTOURO = 700;
+const DURACAO_ESTOURO = 400;
 const ESCALONAMENTO = 55;
 const ATRASO_MAXIMO = 400;
 
@@ -24,6 +24,7 @@ type EntradaProps = ViewProps & {
   children: ReactNode;
   indice?: number;
   aoTerminar?: () => void;
+  duracao?: number;
 };
 
 type Construtor = typeof FadeInDown | typeof FadeInUp | typeof FadeIn | typeof ZoomIn;
@@ -56,9 +57,9 @@ export function Desce({ children, indice = 0, aoTerminar, ...resto }: EntradaPro
   );
 }
 
-export function Surge({ children, indice = 0, aoTerminar, ...resto }: EntradaProps) {
+export function Surge({ children, indice = 0, aoTerminar, duracao, ...resto }: EntradaProps) {
   return (
-    <Animated.View entering={entrada(FadeIn, indice, aoTerminar)} {...resto}>
+    <Animated.View entering={entrada(FadeIn, indice, aoTerminar, duracao)} {...resto}>
       {children}
     </Animated.View>
   );

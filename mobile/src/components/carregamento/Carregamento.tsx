@@ -16,7 +16,8 @@ import { DURACAO_DO_DESENHO, LogoTraco } from '@/components/marca/LogoTraco';
 import { cores, espaco, fonte } from '@/lib/theme';
 
 const TAMANHO_LOGO = 220;
-const DURACAO_SAIDA = 300;
+const DURACAO_ENTRADA = 180;
+const DURACAO_SAIDA = 200;
 const TETO_DA_ANIMACAO = DURACAO_DO_DESENHO + 2000;
 
 type Etapa = 'entrando' | 'desenhando' | 'esperando' | 'saindo';
@@ -122,7 +123,7 @@ function TelaCarregamento({
       accessibilityViewIsModal
       accessibilityLabel={mensagem}
     >
-      <Surge aoTerminar={entrou} style={estilos.tela}>
+      <Surge aoTerminar={entrou} duracao={DURACAO_ENTRADA} style={estilos.tela}>
         <View style={estilos.logo}>
           {etapa !== 'entrando' ? <LogoTraco tamanho={TAMANHO_LOGO} aoConcluir={desenhou} /> : null}
         </View>

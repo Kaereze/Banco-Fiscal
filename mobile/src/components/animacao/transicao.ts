@@ -3,7 +3,7 @@ import { Easing, useSharedValue, withTiming, type SharedValue } from 'react-nati
 
 import { aoTerminar } from './sequencia';
 
-export const DURACAO_TRANSICAO = 600;
+export const DURACAO_TRANSICAO = 250;
 
 export function useTransicao(
   ativa: boolean,

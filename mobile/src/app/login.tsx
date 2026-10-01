@@ -22,7 +22,7 @@ import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
 const ESPERA_MAXIMA_POR_ETAPA = 3000;
-const PAUSA_NO_RESULTADO = 900;
+const PAUSA_NO_RESULTADO = 400;
 
 type Etapa = 'formulario' | 'enviando' | 'campos' | 'botao' | 'pausa';
 

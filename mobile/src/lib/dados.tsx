@@ -130,6 +130,8 @@ const Contexto = createContext<ContextoDados | null>(null);
 
 export function ProvedorDados({ children }: { children: ReactNode }) {
   const { sessao, perfil, perfilResolvido } = useSessao();
+  const usuarioId = sessao?.user.id ?? null;
+  const perfilId = perfil?.id ?? null;
 
   const [mes, setMes] = useState(() => chaveMes(new Date()));
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -157,7 +159,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
   }, []);
 
   const recarregar = useCallback(async () => {
-    if (!sessao) return;
+    if (!usuarioId) return;
     try {
       aplicar(await buscarDados(mes));
     } catch (e) {
@@ -165,10 +167,10 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
     } finally {
       setBuscando(false);
     }
-  }, [sessao, mes, aplicar, falhar]);
+  }, [usuarioId, mes, aplicar, falhar]);
 
   useEffect(() => {
-    if (!sessao || !perfil) return;
+    if (!usuarioId || !perfilId) return;
     let cancelado = false;
     buscarDados(mes)
       .then(
@@ -185,7 +187,7 @@ export function ProvedorDados({ children }: { children: ReactNode }) {
     return () => {
       cancelado = true;
     };
-  }, [sessao, perfil, mes, aplicar, falhar]);
+  }, [usuarioId, perfilId, mes, aplicar, falhar]);
 
   const carregando = !sessao ? false : !perfil ? !perfilResolvido : buscando;
 
