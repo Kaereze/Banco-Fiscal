@@ -1,18 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Surge } from '@/components/animacao';
 import { Botao, Campo, Cartao, Titulo } from '@/components/ui';
-import type { NovaContaAPagar } from '@/lib/contasAPagar';
+import { vencimentoNoMes, type NovaContaAPagar } from '@/lib/contasAPagar';
 import { avisar, mensagemDeErro } from '@/lib/dialogos';
-import { dataDoBanco, limitesDoMes, numeroDoTexto } from '@/lib/format';
-import { espaco } from '@/lib/theme';
-
-function vencimentoNoMes(mes: string, textoDoDia: string): string | null {
-  const dia = Math.trunc(numeroDoTexto(textoDoDia));
-  if (dia < 1) return null;
-  const ultimoDia = dataDoBanco(limitesDoMes(mes).fim).getDate();
-  return `${mes.slice(0, 8)}${String(Math.min(dia, ultimoDia)).padStart(2, '0')}`;
-}
+import { numeroDoTexto } from '@/lib/format';
+import { cores, espaco, fonte } from '@/lib/theme';
 
 export function FormularioContaAPagar({
   mes,
@@ -24,7 +19,9 @@ export function FormularioContaAPagar({
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [dia, setDia] = useState('');
+  const [identificador, setIdentificador] = useState('');
   const [observacao, setObservacao] = useState('');
+  const [maisDetalhes, setMaisDetalhes] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   async function adicionar() {
@@ -39,12 +36,15 @@ export function FormularioContaAPagar({
         descricao: descricao.trim(),
         valor: numero > 0 ? numero : null,
         vencimento: vencimentoNoMes(mes, dia),
+        identificador: identificador.trim() || null,
         observacao: observacao.trim() || null,
       });
       setDescricao('');
       setValor('');
       setDia('');
+      setIdentificador('');
       setObservacao('');
+      setMaisDetalhes(false);
     } catch (e) {
       avisar('Não consegui adicionar', mensagemDeErro(e));
     } finally {
@@ -83,12 +83,32 @@ export function FormularioContaAPagar({
           />
         </View>
       </View>
-      <Campo
-        icone="create-outline"
-        value={observacao}
-        onChangeText={setObservacao}
-        placeholder="Observação (opcional)"
-      />
+      <Pressable
+        onPress={() => setMaisDetalhes((atual) => !atual)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: maisDetalhes }}
+        style={estilos.maisDetalhes}
+      >
+        <Text style={estilos.maisDetalhesTexto}>Mais detalhes</Text>
+        <Ionicons name={maisDetalhes ? 'chevron-up' : 'chevron-down'} size={18} color={cores.primaria} />
+      </Pressable>
+      {maisDetalhes ? (
+        <Surge style={estilos.detalhes}>
+          <Campo
+            icone="business-outline"
+            value={identificador}
+            onChangeText={setIdentificador}
+            placeholder="Como aparece no extrato (ex.: CELESC)"
+            autoCapitalize="characters"
+          />
+          <Campo
+            icone="create-outline"
+            value={observacao}
+            onChangeText={setObservacao}
+            placeholder="Observação"
+          />
+        </Surge>
+      ) : null}
       <Botao titulo="Adicionar" icone="add" onPress={() => void adicionar()} carregando={salvando} />
     </Cartao>
   );
@@ -98,4 +118,7 @@ const estilos = StyleSheet.create({
   cartao: { gap: espaco.md },
   linha: { flexDirection: 'row', gap: espaco.sm },
   metade: { flex: 1 },
+  maisDetalhes: { flexDirection: 'row', alignItems: 'center', gap: espaco.xs, alignSelf: 'flex-start', paddingVertical: espaco.xs },
+  maisDetalhesTexto: { fontSize: fonte.apoio, fontWeight: '700', color: cores.primaria },
+  detalhes: { gap: espaco.md },
 });

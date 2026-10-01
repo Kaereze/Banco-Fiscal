@@ -66,7 +66,19 @@ export type ContaAPagar = {
   observacao: string | null;
   paga: boolean;
   paga_em: string | null;
+  identificador: string | null;
+  transacao_id: string | null;
+  conciliar: boolean;
+  transacao: PagamentoDaConta | null;
   criado_em: string;
+};
+
+export type PagamentoDaConta = {
+  data: string;
+  descricao: string;
+  contraparte: string | null;
+  estabelecimento: string | null;
+  valor: number;
 };
 
 export type Orcamento = {

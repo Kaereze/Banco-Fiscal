@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { dataDoBanco, limitesDoMes, numeroDoTexto } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { ContaAPagar } from '@/lib/types';
 
@@ -7,29 +8,56 @@ export type NovaContaAPagar = {
   descricao: string;
   valor: number | null;
   vencimento: string | null;
+  identificador: string | null;
   observacao: string | null;
 };
+
+export type EdicaoContaAPagar = Partial<
+  Pick<ContaAPagar, 'descricao' | 'valor' | 'vencimento' | 'identificador' | 'observacao' | 'conciliar'>
+>;
+
+export function vencimentoNoMes(mes: string, textoDoDia: string): string | null {
+  const dia = Math.trunc(numeroDoTexto(textoDoDia));
+  if (dia < 1) return null;
+  const ultimoDia = dataDoBanco(limitesDoMes(mes).fim).getDate();
+  return `${mes.slice(0, 8)}${String(Math.min(dia, ultimoDia)).padStart(2, '0')}`;
+}
+
+const COLUNAS = '*, transacao:transacoes(data, descricao, contraparte, estabelecimento, valor)';
+
+type Linha = Omit<ContaAPagar, 'valor' | 'transacao'> & {
+  valor: number | string | null;
+  transacao: (Omit<NonNullable<ContaAPagar['transacao']>, 'valor'> & { valor: number | string }) | null;
+};
+
+function converter(linha: Linha): ContaAPagar {
+  return {
+    ...linha,
+    valor: linha.valor === null ? null : Number(linha.valor),
+    transacao: linha.transacao ? { ...linha.transacao, valor: Number(linha.transacao.valor) } : null,
+  };
+}
 
 async function buscar(mes: string): Promise<ContaAPagar[]> {
   const { data, error } = await supabase
     .from('contas_a_pagar')
-    .select('*')
+    .select(COLUNAS)
     .eq('mes', mes)
     .order('vencimento', { ascending: true, nullsFirst: false })
     .order('criado_em', { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((linha) => ({ ...linha, valor: linha.valor === null ? null : Number(linha.valor) }));
+  return ((data ?? []) as Linha[]).map(converter);
 }
 
-function ordenar(contas: ContaAPagar[]): ContaAPagar[] {
-  return [...contas].sort((a, b) => {
-    if (a.vencimento !== b.vencimento) {
-      if (!a.vencimento) return 1;
-      if (!b.vencimento) return -1;
-      return a.vencimento < b.vencimento ? -1 : 1;
-    }
-    return a.criado_em < b.criado_em ? -1 : 1;
-  });
+async function conciliar(): Promise<number> {
+  const { data, error } = await supabase.rpc('conciliar_contas_a_pagar');
+  if (error) return 0;
+  return Number(data ?? 0);
+}
+
+async function conciliarEBuscar(mes: string): Promise<ContaAPagar[]> {
+  await conciliar();
+  return buscar(mes);
 }
 
 export function useContasAPagar(mes: string) {
@@ -40,7 +68,7 @@ export function useContasAPagar(mes: string) {
 
   const recarregar = useCallback(async () => {
     try {
-      setContas(await buscar(mes));
+      setContas(await conciliarEBuscar(mes));
       setErro(null);
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui carregar as contas.');
@@ -49,7 +77,7 @@ export function useContasAPagar(mes: string) {
 
   useEffect(() => {
     let cancelado = false;
-    buscar(mes)
+    conciliarEBuscar(mes)
       .then(
         (lista) => {
           if (cancelado) return;
@@ -72,29 +100,35 @@ export function useContasAPagar(mes: string) {
 
   const adicionar = useCallback(
     async (nova: NovaContaAPagar) => {
-      const { data, error } = await supabase
-        .from('contas_a_pagar')
-        .insert({ ...nova, mes })
-        .select('*')
-        .single();
+      const { error } = await supabase.from('contas_a_pagar').insert({ ...nova, mes });
       if (error) throw new Error(error.message);
-      const criada = { ...data, valor: data.valor === null ? null : Number(data.valor) } as ContaAPagar;
-      setContas((atuais) => ordenar([...atuais, criada]));
+      setContas(await conciliarEBuscar(mes));
     },
     [mes],
   );
 
-  const atualizar = useCallback(async (id: string, mudancas: Partial<ContaAPagar>) => {
-    setContas((atuais) => atuais.map((c) => (c.id === id ? { ...c, ...mudancas } : c)));
-    const { error } = await supabase.from('contas_a_pagar').update(mudancas).eq('id', id);
+  const editar = useCallback(
+    async (id: string, mudancas: EdicaoContaAPagar) => {
+      setContas((atuais) => atuais.map((c) => (c.id === id ? { ...c, ...mudancas } : c)));
+      const { error } = await supabase.from('contas_a_pagar').update(mudancas).eq('id', id);
+      if (error) throw new Error(error.message);
+      if (['valor', 'vencimento', 'identificador', 'conciliar'].some((campo) => campo in mudancas)) {
+        setContas(await conciliarEBuscar(mes));
+      }
+    },
+    [mes],
+  );
+
+  const alternarPaga = useCallback(async (conta: ContaAPagar) => {
+    const mudancas = conta.paga
+      ? { paga: false, paga_em: null, transacao_id: null, conciliar: false }
+      : { paga: true, paga_em: new Date().toISOString() };
+    setContas((atuais) =>
+      atuais.map((c) => (c.id === conta.id ? { ...c, ...mudancas, ...(conta.paga ? { transacao: null } : {}) } : c)),
+    );
+    const { error } = await supabase.from('contas_a_pagar').update(mudancas).eq('id', conta.id);
     if (error) throw new Error(error.message);
   }, []);
-
-  const alternarPaga = useCallback(
-    (conta: ContaAPagar) =>
-      atualizar(conta.id, { paga: !conta.paga, paga_em: conta.paga ? null : new Date().toISOString() }),
-    [atualizar],
-  );
 
   const remover = useCallback(async (id: string) => {
     const { error } = await supabase.from('contas_a_pagar').delete().eq('id', id);
@@ -108,7 +142,7 @@ export function useContasAPagar(mes: string) {
     erro,
     recarregar,
     adicionar,
-    atualizar,
+    editar,
     alternarPaga,
     remover,
   };

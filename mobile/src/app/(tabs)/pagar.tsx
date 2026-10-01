@@ -15,7 +15,7 @@ import type { ContaAPagar } from '@/lib/types';
 
 export default function ContasAPagar() {
   const { mes } = useDados();
-  const { contas, carregando, erro, recarregar, adicionar, atualizar, alternarPaga, remover } =
+  const { contas, carregando, erro, recarregar, adicionar, editar, alternarPaga, remover } =
     useContasAPagar(mes);
 
   const total = contas.reduce((soma, c) => soma + (c.valor ?? 0), 0);
@@ -78,7 +78,7 @@ export default function ContasAPagar() {
                   <CartaoContaAPagar
                     conta={conta}
                     aoAlternarPaga={() => void tentar(() => alternarPaga(conta))}
-                    aoAnotar={(texto) => void tentar(() => atualizar(conta.id, { observacao: texto || null }))}
+                    aoEditar={(mudancas) => void tentar(() => editar(conta.id, mudancas))}
                     aoApagar={() => void apagar(conta)}
                   />
                 </SaiDeLado>
