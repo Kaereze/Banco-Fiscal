@@ -27,6 +27,7 @@ const QUIQUE = [
 const DURACAO_QUEDA = QUEDA + QUIQUE.reduce((soma, q) => soma + q.duracao * 2, 0);
 const DURACAO_ONDA = 600;
 const DURACAO_ENCOLHER = 320;
+const DURACAO_PREENCHER = 350;
 const VELOCIDADE_DO_TRACO = 0.7;
 const ESPESSURA_DO_TRACO = 1.6;
 const ESCALA_QUEDA = 1.7;
@@ -55,7 +56,7 @@ export function LogoMoeda({ tamanho = 180, aoConcluir }: { tamanho?: number; aoC
   const giro = useSharedValue(0);
   const escala = useSharedValue(ESCALA_QUEDA);
   const impacto = useSharedValue(0);
-  const preenchimento = useTransicao(etapa >= ETAPA_PREENCHER, avancar);
+  const preenchimento = useTransicao(etapa >= ETAPA_PREENCHER, avancar, undefined, DURACAO_PREENCHER);
 
   useEffect(() => {
     const iniciarOnda = () => {

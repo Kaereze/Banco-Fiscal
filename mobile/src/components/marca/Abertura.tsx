@@ -21,7 +21,7 @@ export function Abertura({ aoConcluir }: { aoConcluir: () => void }) {
   const [etapa, setEtapa] = useState<Etapa>('logo');
   const [desistiuDeEsperar, setDesistiuDeEsperar] = useState(false);
 
-  const logoPronta = useCallback(() => setEtapa('saudacao'), []);
+  const logoPronta = useCallback(() => setEtapa(logado ? 'saudacao' : 'esperando'), [logado]);
   const saudacaoPronta = useCallback(() => setEtapa('esperando'), []);
 
   useEffect(() => {
