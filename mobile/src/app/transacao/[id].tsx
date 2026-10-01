@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Share, StyleSheet, Text, View } from 'react-native';
+import { Share, StyleSheet, Text, View } from 'react-native';
 
 import { TelaFormulario } from '@/components/layout/Tela';
 import { NOME_DO_APP } from '@/components/marca/Logo';
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui';
 import { useDados } from '@/lib/dados';
 import { lerCategoriaDoBanco } from '@/lib/categoriasDoBanco';
+import { avisar, confirmar, mensagemDeErro } from '@/lib/dialogos';
 import { dataLonga, moeda } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import { formatarCnpj, nomeDoPagamento } from '@/lib/transacoes';
@@ -87,7 +88,7 @@ function Editor({ transacao }: { transacao: Transacao }) {
           categoria_id: categoriaId,
           pessoa: pessoa.trim() || null,
         });
-        if (error) Alert.alert('A regra não foi criada', error.message);
+        if (error) avisar('A regra não foi criada', error.message);
       }
 
       router.back();
@@ -98,29 +99,22 @@ function Editor({ transacao }: { transacao: Transacao }) {
     }
   }
 
-  function confirmarExclusao() {
-    Alert.alert('Apagar lançamento', 'Essa ação não pode ser desfeita.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Apagar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await apagarLancamento(transacao.id);
-            router.back();
-          } catch (e) {
-            Alert.alert('Erro', e instanceof Error ? e.message : 'Não consegui apagar.');
-          }
-        },
-      },
-    ]);
+  async function confirmarExclusao() {
+    const quer = await confirmar('Apagar lançamento', 'Essa ação não pode ser desfeita.', 'Apagar');
+    if (!quer) return;
+    try {
+      await apagarLancamento(transacao.id);
+      router.back();
+    } catch (e) {
+      avisar('Não consegui apagar', mensagemDeErro(e));
+    }
   }
 
   async function compartilhar() {
     try {
       await Share.share({ message: comprovante(transacao, conta, categoria) });
     } catch (e) {
-      Alert.alert('Não consegui compartilhar', e instanceof Error ? e.message : 'Tente de novo.');
+      avisar('Não consegui compartilhar', mensagemDeErro(e));
     }
   }
 
@@ -217,7 +211,7 @@ function Editor({ transacao }: { transacao: Transacao }) {
 
       <Botao titulo="Salvar" onPress={salvar} carregando={salvando} />
       {transacao.origem === 'manual' ? (
-        <Botao titulo="Apagar lançamento" variante="perigo" onPress={confirmarExclusao} />
+        <Botao titulo="Apagar lançamento" variante="perigo" onPress={() => void confirmarExclusao()} />
       ) : null}
     </TelaFormulario>
   );

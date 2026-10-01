@@ -38,8 +38,7 @@ export function Abertura({ aoConcluir }: { aoConcluir: () => void }) {
 
   return (
     <Animated.View
-      pointerEvents={saindo ? 'none' : 'auto'}
-      style={[StyleSheet.absoluteFill, estilos.tela, estiloSaida]}
+      style={[StyleSheet.absoluteFill, estilos.tela, estiloSaida, { pointerEvents: saindo ? 'none' : 'auto' }]}
     >
       <View style={estilos.centro}>
         <LogoMoeda tamanho={TAMANHO_LOGO} aoConcluir={logoPronta} />

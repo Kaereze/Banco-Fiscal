@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { SaiDeLado } from '@/components/animacao';
@@ -8,6 +8,7 @@ import { SeletorMes } from '@/components/financas/SeletorMes';
 import { conteudoDeFormulario } from '@/components/layout/Tela';
 import { Carregando, GradePilulas, Pilula, Vazio } from '@/components/ui';
 import { useDados } from '@/lib/dados';
+import { avisar, mensagemDeErro } from '@/lib/dialogos';
 import { moeda } from '@/lib/format';
 import type { Transacao } from '@/lib/types';
 import { cores, espaco, fonte, raio } from '@/lib/theme';
@@ -29,7 +30,7 @@ export default function Classificar() {
     try {
       await editarTransacao(id, mudancas);
     } catch (e) {
-      Alert.alert('Não consegui salvar', e instanceof Error ? e.message : 'Tente de novo.');
+      avisar('Não consegui salvar', mensagemDeErro(e));
       await recarregar();
     }
   }

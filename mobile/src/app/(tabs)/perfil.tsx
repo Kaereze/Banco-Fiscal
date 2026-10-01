@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Desce, Sobe } from '@/components/animacao';
 import { TelaAba } from '@/components/layout/Tela';
 import { Aviso, Botao, CabecalhoTela, ItemMenu } from '@/components/ui';
 import { mesPorExtenso } from '@/lib/format';
 import { useDados } from '@/lib/dados';
+import { confirmar } from '@/lib/dialogos';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, raio, textoSobre } from '@/lib/theme';
 
@@ -18,11 +19,9 @@ export default function Perfil() {
   const nome = perfil?.nome ?? 'Sem perfil';
   const inicial = (perfil?.nome ?? sessao?.user.email ?? '?').charAt(0).toUpperCase();
 
-  function confirmarSaida() {
-    Alert.alert('Sair do app', 'Você precisará digitar o e-mail e a senha de novo.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => void sair() },
-    ]);
+  async function confirmarSaida() {
+    const quer = await confirmar('Sair do app', 'Você precisará digitar o e-mail e a senha de novo.', 'Sair');
+    if (quer) await sair();
   }
 
   return (
@@ -64,7 +63,7 @@ export default function Perfil() {
       </Sobe>
 
       <Sobe indice={3}>
-        <Botao titulo="Sair" variante="sutil" icone="log-out-outline" onPress={confirmarSaida} />
+        <Botao titulo="Sair" variante="sutil" icone="log-out-outline" onPress={() => void confirmarSaida()} />
       </Sobe>
     </TelaAba>
   );

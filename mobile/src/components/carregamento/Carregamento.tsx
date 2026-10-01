@@ -118,8 +118,7 @@ function TelaCarregamento({
 
   return (
     <Animated.View
-      pointerEvents={saindo ? 'none' : 'auto'}
-      style={[StyleSheet.absoluteFill, estilos.camada, estiloSaida]}
+      style={[StyleSheet.absoluteFill, estilos.camada, estiloSaida, { pointerEvents: saindo ? 'none' : 'auto' }]}
       accessibilityViewIsModal
       accessibilityLabel={mensagem}
     >

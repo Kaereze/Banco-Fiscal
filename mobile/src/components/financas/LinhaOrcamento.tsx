@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { avisar, mensagemDeErro } from '@/lib/dialogos';
 import { moeda, numeroDoTexto } from '@/lib/format';
 import { cores, espaco, fonte, raio } from '@/lib/theme';
 import type { Categoria } from '@/lib/types';
@@ -25,7 +26,7 @@ export function LinhaOrcamento({
     try {
       await onSalvar(valor);
     } catch (e) {
-      Alert.alert('Não consegui salvar', e instanceof Error ? e.message : 'Tente de novo.');
+      avisar('Não consegui salvar', mensagemDeErro(e));
     }
   }
 

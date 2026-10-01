@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import { useCarregamento } from '@/components/carregamento/Carregamento';
 import { conteudoCentralizado } from '@/components/layout/Tela';
 import { Logo, NOME_DO_APP } from '@/components/marca/Logo';
 import { Botao, Campo, type Resultado } from '@/components/ui';
+import { avisar } from '@/lib/dialogos';
 import { useSessao } from '@/lib/sessao';
 import { cores, espaco, fonte, MARGEM_FORMULARIO } from '@/lib/theme';
 
@@ -91,7 +91,7 @@ export default function Login() {
   const resultadoDoBotao = (etapa === 'botao' || etapa === 'pausa') && resultado ? resultado : undefined;
 
   function esqueciASenha() {
-    Alert.alert(
+    avisar(
       'Esqueceu a senha?',
       'As contas são criadas por quem administra o app. Peça para redefinirem a sua senha.',
     );
