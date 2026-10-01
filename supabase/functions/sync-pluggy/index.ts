@@ -457,6 +457,8 @@ async function sincronizar(db: SupabaseClient, dias: number) {
     }
 
     const categorizadas = await aplicarRegras(db);
+    const { error: erroConciliacao } = await db.rpc('conciliar_contas_a_pagar');
+    if (erroConciliacao) console.warn('Nao consegui conciliar as contas a pagar:', erroConciliacao.message);
 
     if (registroId) {
       await db
