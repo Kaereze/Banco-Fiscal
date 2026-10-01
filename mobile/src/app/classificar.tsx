@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { SaiDeLado } from '@/components/animacao';
 import { CartaoClassificacao } from '@/components/financas/CartaoClassificacao';
@@ -41,7 +41,6 @@ export default function Classificar() {
       data={lista}
       keyExtractor={(item) => item.id}
       contentContainerStyle={conteudoDeFormulario}
-      itemLayoutAnimation={LinearTransition.duration(260)}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       automaticallyAdjustKeyboardInsets

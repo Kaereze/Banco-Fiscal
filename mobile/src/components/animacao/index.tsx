@@ -17,6 +17,7 @@ export { DURACAO_TRANSICAO, useTransicao } from './transicao';
 
 const DURACAO = 420;
 const DURACAO_ESTOURO = 400;
+const DURACAO_SAIDA = 250;
 const ESCALONAMENTO = 55;
 const ATRASO_MAXIMO = 400;
 
@@ -75,7 +76,7 @@ export function Estoura({ children, indice = 0, aoTerminar, ...resto }: EntradaP
 
 export function SaiDeLado({ children, ...resto }: ViewProps & { children: ReactNode }) {
   return (
-    <Animated.View exiting={FadeOutLeft.duration(DURACAO)} layout={LinearTransition.duration(260)} {...resto}>
+    <Animated.View exiting={FadeOutLeft.duration(DURACAO_SAIDA)} {...resto}>
       {children}
     </Animated.View>
   );
