@@ -11,6 +11,7 @@ const ABAS: { nome: string; titulo: string; icone: NomeIcone; iconeAtivo: NomeIc
   { nome: 'transacoes', titulo: 'Extrato', icone: 'swap-vertical-outline', iconeAtivo: 'swap-vertical' },
   { nome: 'relatorios', titulo: 'Relatórios', icone: 'bar-chart-outline', iconeAtivo: 'bar-chart' },
   { nome: 'contas', titulo: 'Contas', icone: 'wallet-outline', iconeAtivo: 'wallet' },
+  { nome: 'pagar', titulo: 'A pagar', icone: 'receipt-outline', iconeAtivo: 'receipt' },
   { nome: 'perfil', titulo: 'Perfil', icone: 'person-outline', iconeAtivo: 'person' },
 ];
 

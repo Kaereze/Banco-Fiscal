@@ -57,6 +57,18 @@ export type Transacao = {
   atualizado_em: string;
 };
 
+export type ContaAPagar = {
+  id: string;
+  mes: string;
+  descricao: string;
+  valor: number | null;
+  vencimento: string | null;
+  observacao: string | null;
+  paga: boolean;
+  paga_em: string | null;
+  criado_em: string;
+};
+
 export type Orcamento = {
   id: string;
   categoria_id: string;
